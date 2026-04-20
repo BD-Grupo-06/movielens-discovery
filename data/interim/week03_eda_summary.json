@@ -1,0 +1,279 @@
+{
+  "table_shapes": [
+    {
+      "table": "ratings",
+      "rows": 25000095,
+      "cols": 4,
+      "size_mb": 646.84,
+      "scope": "core"
+    },
+    {
+      "table": "genome_scores",
+      "rows": 15584448,
+      "cols": 3,
+      "size_mb": 415.0,
+      "scope": "optional"
+    },
+    {
+      "table": "tags",
+      "rows": 1093360,
+      "cols": 4,
+      "size_mb": 37.01,
+      "scope": "core"
+    },
+    {
+      "table": "movies",
+      "rows": 62423,
+      "cols": 3,
+      "size_mb": 2.9,
+      "scope": "core"
+    },
+    {
+      "table": "links",
+      "rows": 62423,
+      "cols": 3,
+      "size_mb": 1.31,
+      "scope": "core"
+    },
+    {
+      "table": "genome_tags",
+      "rows": 1128,
+      "cols": 2,
+      "size_mb": 0.02,
+      "scope": "optional"
+    }
+  ],
+  "recommended_table_usage": [
+    {
+      "table": "ratings",
+      "week3_use": "required",
+      "reason": "primary interaction layer and sparsity analysis"
+    },
+    {
+      "table": "movies",
+      "week3_use": "required",
+      "reason": "catalog layer and metadata base"
+    },
+    {
+      "table": "tags",
+      "week3_use": "recommended",
+      "reason": "text signal for future content and hybrid features"
+    },
+    {
+      "table": "links",
+      "week3_use": "recommended",
+      "reason": "external IDs and integration hooks"
+    },
+    {
+      "table": "genome_scores",
+      "week3_use": "optional",
+      "reason": "large feature source for week5+, can be deferred"
+    },
+    {
+      "table": "genome_tags",
+      "week3_use": "optional",
+      "reason": "lookup table for genome_scores tags"
+    }
+  ],
+  "missing_columns_nonzero": [
+    {
+      "table": "links",
+      "column": "tmdbId",
+      "null_count": 107,
+      "null_pct": 0.1714
+    }
+  ],
+  "quality_checks": {
+    "ratings_missing_required": 0,
+    "ratings_out_of_range": 0,
+    "ratings_duplicate_user_movie_pairs": 0,
+    "movies_duplicate_movieId": 0,
+    "movies_missing_title": 0,
+    "movies_missing_genres": 0,
+    "tags_missing_tag_text": 0,
+    "tags_duplicate_full_rows": 0,
+    "links_missing_imdbId": 0,
+    "links_missing_tmdbId": 107,
+    "links_duplicate_movieId": 0,
+    "genome_scores_duplicate_movie_tag": 0,
+    "genome_tags_duplicate_tagId": 0
+  },
+  "join_coverage": [
+    {
+      "relationship_check": "ratings movieId matched in movies",
+      "unmatched_count": 0,
+      "coverage_pct": 100.0
+    },
+    {
+      "relationship_check": "tags movieId matched in movies",
+      "unmatched_count": 0,
+      "coverage_pct": 100.0
+    },
+    {
+      "relationship_check": "genome_scores movieId matched in movies",
+      "unmatched_count": 0,
+      "coverage_pct": 100.0
+    },
+    {
+      "relationship_check": "genome_scores tagId matched in genome_tags",
+      "unmatched_count": 0,
+      "coverage_pct": 100.0
+    }
+  ],
+  "scale_metrics": {
+    "users": 162541,
+    "items": 59047,
+    "interactions": 25000095,
+    "possible_user_item_pairs": 9597558427,
+    "density_pct": 0.260484,
+    "sparsity_pct": 99.739516
+  },
+  "table_memory_estimate_mb": [
+    {
+      "table": "ratings",
+      "rows": 25000095,
+      "cols": 4,
+      "size_mb": 646.84,
+      "scope": "core"
+    },
+    {
+      "table": "genome_scores",
+      "rows": 15584448,
+      "cols": 3,
+      "size_mb": 415.0,
+      "scope": "optional"
+    },
+    {
+      "table": "tags",
+      "rows": 1093360,
+      "cols": 4,
+      "size_mb": 37.01,
+      "scope": "core"
+    },
+    {
+      "table": "movies",
+      "rows": 62423,
+      "cols": 3,
+      "size_mb": 2.9,
+      "scope": "core"
+    },
+    {
+      "table": "links",
+      "rows": 62423,
+      "cols": 3,
+      "size_mb": 1.31,
+      "scope": "core"
+    },
+    {
+      "table": "genome_tags",
+      "rows": 1128,
+      "cols": 2,
+      "size_mb": 0.02,
+      "scope": "optional"
+    }
+  ],
+  "rating_distribution": [
+    {
+      "rating": 0.5,
+      "len": 393068
+    },
+    {
+      "rating": 1.0,
+      "len": 776815
+    },
+    {
+      "rating": 1.5,
+      "len": 399490
+    },
+    {
+      "rating": 2.0,
+      "len": 1640868
+    },
+    {
+      "rating": 2.5,
+      "len": 1262797
+    },
+    {
+      "rating": 3.0,
+      "len": 4896928
+    },
+    {
+      "rating": 3.5,
+      "len": 3177318
+    },
+    {
+      "rating": 4.0,
+      "len": 6639798
+    },
+    {
+      "rating": 4.5,
+      "len": 2200539
+    },
+    {
+      "rating": 5.0,
+      "len": 3612474
+    }
+  ],
+  "top_genres": [
+    {
+      "genres": "Drama",
+      "len": 25606
+    },
+    {
+      "genres": "Comedy",
+      "len": 16870
+    },
+    {
+      "genres": "Thriller",
+      "len": 8654
+    },
+    {
+      "genres": "Romance",
+      "len": 7719
+    },
+    {
+      "genres": "Action",
+      "len": 7348
+    },
+    {
+      "genres": "Horror",
+      "len": 5989
+    },
+    {
+      "genres": "Documentary",
+      "len": 5605
+    },
+    {
+      "genres": "Crime",
+      "len": 5319
+    },
+    {
+      "genres": "(no genres listed)",
+      "len": 5062
+    },
+    {
+      "genres": "Adventure",
+      "len": 4145
+    },
+    {
+      "genres": "Sci-Fi",
+      "len": 3595
+    },
+    {
+      "genres": "Children",
+      "len": 2935
+    },
+    {
+      "genres": "Animation",
+      "len": 2929
+    },
+    {
+      "genres": "Mystery",
+      "len": 2925
+    },
+    {
+      "genres": "Fantasy",
+      "len": 2731
+    }
+  ]
+}

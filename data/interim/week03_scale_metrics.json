@@ -1,0 +1,54 @@
+{
+  "scale_metrics": {
+    "users": 162541,
+    "items": 59047,
+    "interactions": 25000095,
+    "possible_user_item_pairs": 9597558427,
+    "density_pct": 0.260484,
+    "sparsity_pct": 99.739516
+  },
+  "table_memory_estimate_mb": [
+    {
+      "table": "ratings",
+      "rows": 25000095,
+      "cols": 4,
+      "size_mb": 646.84,
+      "scope": "core"
+    },
+    {
+      "table": "genome_scores",
+      "rows": 15584448,
+      "cols": 3,
+      "size_mb": 415.0,
+      "scope": "optional"
+    },
+    {
+      "table": "tags",
+      "rows": 1093360,
+      "cols": 4,
+      "size_mb": 37.01,
+      "scope": "core"
+    },
+    {
+      "table": "movies",
+      "rows": 62423,
+      "cols": 3,
+      "size_mb": 2.9,
+      "scope": "core"
+    },
+    {
+      "table": "links",
+      "rows": 62423,
+      "cols": 3,
+      "size_mb": 1.31,
+      "scope": "core"
+    },
+    {
+      "table": "genome_tags",
+      "rows": 1128,
+      "cols": 2,
+      "size_mb": 0.02,
+      "scope": "optional"
+    }
+  ]
+}
