@@ -1,2 +1,3 @@
 .DS_Store
-data/raw/ml-25m/
+data/raw/ml-25m/*
+data/processed/week03_v1/*

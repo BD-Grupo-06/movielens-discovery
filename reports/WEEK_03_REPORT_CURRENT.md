@@ -8,7 +8,7 @@ This comprehensive report consolidates all seven Week 3 deliverables for the sem
 - **Course**: Semester Project: Domain Discovery, Recommendation, and Graph Intelligence
 - **Milestone objective**: Prove valid domain, valid data source, and reproducible first dataset build
 - **Report date**: April 2026
-- **Status**: 6 of 7 deliverables completed; processed dataset V1 pending final pipeline execution
+- **Status**: 7 of 7 deliverables completed; processed dataset V1 generated and validated
 
 ---
 
@@ -145,14 +145,14 @@ This project uses a single official source, so no cross-source matching logic is
 
 ### Processed Week 3 Outputs
 
-1. **ratings_cleaned.parquet**
+1. **ratings_clean.parquet**
     - Based on ratings.csv after range/null/duplicate checks
-    - Columns: `userId`, `movieId`, `rating`, `timestamp`
+    - Columns: `userId`, `movieId`, `rating`, `timestamp`, `rated_at`
 
-2. **movies_with_features.parquet**
-    - Movies joined with aggregated rating statistics
+2. **movies_catalog.parquet**
+    - Catalog table with `links` merged for direct `imdbId`/`tmdbId` access
     - Base columns: `movieId`, `title`, `genres`
-    - Derived columns: `release_year`, `genre_count`, `primary_genre`, `rating_count`, `rating_mean`, `rating_std`, `rating_min`, `rating_max`, `first_rating_ts`, `last_rating_ts`
+    - Added columns: `imdbId`, `tmdbId`, `release_year`, `genres_raw`, `genres_list`, `imdb_title_id`
 
 ### Key Data Quality Checks for Week 3
 
@@ -165,72 +165,93 @@ This project uses a single official source, so no cross-source matching logic is
 
 ## 4. Processed Dataset V1 Status
 
-### Current Status: Pending Final Pipeline Execution
+### Current Status: Complete
 
-#### What Exists
+The cleaning notebook was executed successfully and produced Processed Dataset V1 in:
 
-- Reproducible ingestion command documented in project `README.md`
-- EDA and data profiling completed in `notebooks/week03_eda.ipynb`
-- Interim quality-check artifacts generated in `data/interim/`
+`data/processed/week03_v1/`
 
-#### What Is Needed
+#### Produced Outputs
 
-Run the pipeline to generate processed outputs:
+1. `movies_catalog.parquet`
+2. `ratings_clean.parquet`
+3. `tags_clean.parquet`
+4. `movie_genres.parquet`
+5. `week03_processed_dictionary_profile.csv`
+6. `week03_cleaning_report.json`
 
-```bash
-python src/pipeline.py \
-  --raw-dir data/raw/ml-25m \
-  --interim-dir data/interim \
-  --processed-dir data/processed
-```
+#### Verification Summary (post-run)
 
-#### Expected Outputs
-
-After successful pipeline execution:
-
-- `data/processed/ratings_cleaned.parquet` — cleaned interaction table
-- `data/processed/movies_with_features.parquet` — enriched catalog table
-- `data/processed/data_quality_report.json` — detailed quality metrics (optional)
+- movies_rows: 62,423
+- ratings_rows: 25,000,095
+- tags_rows: 1,093,351
+- movie_genres_rows: 107,245
+- dup_movies_movieId: 0
+- dup_ratings_user_movie: 0
+- dup_tags_fullrow: 0
+- ratings_null_required: 0
+- tags_null_required: 0
+- movies_null_required: 0
+- ratings_out_of_range: 0
+- movies_tmdb_null: 107
+- ratings_movieid_unmatched: 0
+- tags_movieid_unmatched: 0
 
 ---
 
 ## 5. Data Dictionary Draft
 
-This data dictionary defines all columns in processed Week 3 outputs. Final null rates and type confirmations will be populated after pipeline execution.
+This data dictionary reflects the executed Processed Dataset V1 files.
 
-### ratings_cleaned.parquet
+### ratings_clean.parquet
 
-| Column    | Type    | Description                    | Allowed/Observed Range | Null Rate   | Notes                    |
-| --------- | ------- | ------------------------------ | ---------------------- | ----------- | ------------------------ |
-| userId    | int64   | Anonymized user identifier     | ≥ 1                    | 0% expected | Source: ratings.csv      |
-| movieId   | int64   | Movie identifier               | ≥ 1                    | 0% expected | Joins to movies.movieId  |
-| rating    | float64 | Explicit user rating           | [0.5, 5.0]             | 0% expected | Half-star granularity    |
-| timestamp | int64   | Rating event time (Unix epoch) | dataset-dependent      | 0% expected | Seconds since 1970-01-01 |
+| Column    | Type     | Description                    |
+| --------- | -------- | ------------------------------ |
+| userId    | int64    | Anonymized user identifier     |
+| movieId   | int64    | Movie identifier               |
+| rating    | float64  | Explicit user rating           |
+| timestamp | int64    | Rating timestamp (Unix epoch)  |
+| rated_at  | datetime | Parsed UTC datetime from epoch |
 
-### movies_with_features.parquet
+### movies_catalog.parquet
 
-| Column          | Type    | Description                 | Allowed/Observed Range | Null Rate         | Notes                                      |
-| --------------- | ------- | --------------------------- | ---------------------- | ----------------- | ------------------------------------------ |
-| movieId         | int64   | Movie identifier            | ≥ 1                    | 0% expected       | Primary catalog key                        |
-| title           | string  | Movie title                 | text                   | 0% expected       | Often includes release year in parentheses |
-| genres          | string  | Pipe-separated genres       | text                   | 0% expected       | Example: "Action\|Adventure"               |
-| release_year    | float64 | Parsed release year         | 1900–2025              | to fill after run | NaN when pattern missing                   |
-| genre_count     | int64   | Number of listed genres     | ≥ 1                    | 0% expected       | Derived feature                            |
-| primary_genre   | string  | First genre token           | text                   | to fill after run | Derived feature                            |
-| rating_count    | int64   | Number of ratings for movie | ≥ 0                    | 0% expected       | Aggregated from ratings_cleaned            |
-| rating_mean     | float64 | Mean movie rating           | [0.5, 5.0]             | to fill after run | NaN if unrated                             |
-| rating_std      | float64 | Rating standard deviation   | ≥ 0                    | to fill after run | NaN if single-rating movie                 |
-| rating_min      | float64 | Minimum movie rating        | [0.5, 5.0]             | to fill after run | Derived from ratings                       |
-| rating_max      | float64 | Maximum movie rating        | [0.5, 5.0]             | to fill after run | Derived from ratings                       |
-| first_rating_ts | float64 | Earliest rating timestamp   | dataset-dependent      | to fill after run | NaN if unrated                             |
-| last_rating_ts  | float64 | Latest rating timestamp     | dataset-dependent      | to fill after run | NaN if unrated                             |
+| Column        | Type         | Description                                  |
+| ------------- | ------------ | -------------------------------------------- |
+| movieId       | int64        | Movie identifier                             |
+| title         | string       | Movie title                                  |
+| genres        | string       | Original genres string from source           |
+| imdbId        | int64        | IMDB numeric identifier                      |
+| tmdbId        | int64        | TMDB numeric identifier (107 nulls expected) |
+| release_year  | int64        | Parsed year from title when available        |
+| genres_raw    | string       | Genres with `(no genres listed)` normalized  |
+| genres_list   | list[string] | Tokenized list of genres                     |
+| imdb_title_id | string       | Formatted IMDB key (`tt...`)                 |
 
-### Validation Checklist
+### tags_clean.parquet
 
-1. Confirm schema using `df.dtypes` on both processed outputs
-2. Confirm null rates using `df.isna().mean() * 100`
-3. Confirm rating bounds and duplicate rules in `ratings_cleaned.parquet`
-4. Verify no `(userId, movieId)` duplicates in `ratings_cleaned.parquet`
+| Column         | Type     | Description                           |
+| -------------- | -------- | ------------------------------------- |
+| userId         | int64    | Anonymized user identifier            |
+| movieId        | int64    | Movie identifier                      |
+| tag            | string   | Original cleaned tag text (trimmed)   |
+| timestamp      | int64    | Tag timestamp (Unix epoch)            |
+| tag_normalized | string   | Lowercased normalization for modeling |
+| tagged_at      | datetime | Parsed UTC datetime from epoch        |
+
+### movie_genres.parquet
+
+| Column  | Type   | Description                   |
+| ------- | ------ | ----------------------------- |
+| movieId | int64  | Movie identifier              |
+| genre   | string | One genre token per movie row |
+
+### Validation Checklist (Executed)
+
+1. Schema confirmed for all processed files.
+2. Null checks for required columns returned zero invalid rows.
+3. Rating bounds check returned zero out-of-range rows.
+4. Duplicate checks returned zero key duplicates in movies and ratings.
+5. Join integrity checks returned zero unmatched movie IDs for ratings and tags.
 
 ---
 
@@ -267,6 +288,8 @@ This high sparsity is typical for recommendation domains and justifies collabora
 | Required fields (userId, movieId) missing in ratings | 0                | 100% coverage                |
 | Ratings outside [0.5, 5.0]                           | 0                | All ratings valid            |
 | Duplicate (userId, movieId) pairs                    | 0                | No duplicate interactions    |
+| Duplicate full rows in tags                          | 0                | No exact duplicates          |
+| Tags dropped by cleaning                             | 9 rows           | 1,093,360 → 1,093,351        |
 | Missing tmdbId in links                              | 107 rows (0.17%) | Acceptable; imdbId available |
 | Join coverage: ratings → movies                      | 100%             | All rated movies in catalog  |
 | Join coverage: tags → movies                         | 100%             | All tagged movies in catalog |
@@ -284,11 +307,8 @@ This high sparsity is typical for recommendation domains and justifies collabora
 
 - ratings
 - movies
-
-**Week 3+ (recommended for Week 5+):**
-
 - tags
-- links
+- links (merged into movies_catalog)
 
 **Defer to later weeks:**
 
@@ -344,28 +364,28 @@ This Week 3 milestone follows MovieLens source access conditions and includes an
 
 ## Final Week 3 Status
 
-| Deliverable               | Status               | Evidence                       |
-| ------------------------- | -------------------- | ------------------------------ |
-| 1. Project proposal       | ✅ Complete          | Section 1 of this report       |
-| 2. Source inventory       | ✅ Complete          | Section 2 of this report       |
-| 3. Schema draft           | ✅ Complete          | Section 3 of this report       |
-| 4. Processed dataset V1   | ⏳ Pending execution | See Section 4 pipeline command |
-| 5. Data dictionary draft  | ✅ Complete          | Section 5 of this report       |
-| 6. Scale analysis         | ✅ Complete          | Section 6 of this report       |
-| 7. Ethics and access note | ✅ Complete          | Section 7 of this report       |
+| Deliverable               | Status      | Evidence                                  |
+| ------------------------- | ----------- | ----------------------------------------- |
+| 1. Project proposal       | ✅ Complete | Section 1 of this report                  |
+| 2. Source inventory       | ✅ Complete | Section 2 of this report                  |
+| 3. Schema draft           | ✅ Complete | Section 3 of this report                  |
+| 4. Processed dataset V1   | ✅ Complete | Section 4 and `data/processed/week03_v1/` |
+| 5. Data dictionary draft  | ✅ Complete | Section 5 of this report                  |
+| 6. Scale analysis         | ✅ Complete | Section 6 of this report                  |
+| 7. Ethics and access note | ✅ Complete | Section 7 of this report                  |
 
-**Overall status**: 6 of 7 deliverables complete. The single remaining task is executing the pipeline to generate processed parquet files in `data/processed/`.
+**Overall status**: 7 of 7 deliverables complete for Week 3.
 
 ---
 
 ## Next Steps
 
-### Immediate (to close Week 3)
+### Immediate (submission packaging)
 
-1. Execute pipeline: `python src/pipeline.py --raw-dir data/raw/ml-25m --interim-dir data/interim --processed-dir data/processed`
-2. Verify `ratings_cleaned.parquet` and `movies_with_features.parquet` exist
-3. Fill any remaining "to fill after run" fields in the Data Dictionary (Section 5)
-4. Confirm final file inventory matches submission checklist
+1. Keep `data/processed/week03_v1/` as the canonical Processed V1 output folder.
+2. Ensure report links and filenames match actual artifacts (`ratings_clean.parquet`, `movies_catalog.parquet`, `tags_clean.parquet`, `movie_genres.parquet`).
+3. Include `week03_cleaning_report.json` and `week03_processed_dictionary_profile.csv` in submission evidence.
+4. Keep run commands documented in `README.md` and notebook execution order reproducible.
 
 ### Week 4 Preparation
 
