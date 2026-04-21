@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This comprehensive report consolidates all seven Week 3 deliverables for the semester group assignment:
+This report pulls together the seven Week 3 deliverables for the semester project. The goal here is straightforward: show that the topic is valid, the source is allowed, and the first cleaned dataset build is reproducible.
 
 - **Project title**: Personalized Movie Discovery and Recommendation Engine (MovieLens 25M)
 - **Course**: Semester Project: Domain Discovery, Recommendation, and Graph Intelligence
@@ -48,7 +48,7 @@ Users face a large movie catalog and need relevant, personalized discovery suppo
 
 ### Week 3 Scope Note
 
-This milestone only delivers the initial reproducible data build and documentation (processed dataset V1). Model training and advanced analytics are out of scope for Week 3 and will proceed in Weeks 5–14.
+For Week 3, we stay focused on the first reproducible data build and the supporting documentation around it. Model training and the more advanced analysis work come later, in Weeks 5–14.
 
 ---
 
@@ -73,7 +73,7 @@ Harper, F. M., and Konstan, J. A. (2015). The MovieLens Datasets: History and Co
 
 ### Raw File Formats
 
-The ZIP archive includes CSV files:
+The ZIP archive includes these CSV files:
 
 1. `ratings.csv` — user-movie interactions
 2. `movies.csv` — catalog metadata
@@ -89,7 +89,7 @@ The ZIP archive includes CSV files:
 
 ### Week 3 Compliance
 
-This project uses a single official source, so no cross-source matching logic is required for Week 3.
+Because the project uses one official source, Week 3 does not need cross-source matching logic.
 
 ---
 
@@ -146,20 +146,17 @@ This project uses a single official source, so no cross-source matching logic is
 ### Processed Week 3 Outputs
 
 1. **ratings_clean.parquet**
-    - Based on ratings.csv after range/null/duplicate checks
+    - Cleaned from ratings.csv after range, null, and duplicate checks
     - Columns: `userId`, `movieId`, `rating`, `timestamp`, `rated_at`
 
 2. **movies_catalog.parquet**
-    - Catalog table with `links` merged for direct `imdbId`/`tmdbId` access
+    - Catalog table with `links` merged in so `imdbId` and `tmdbId` are immediately available
     - Base columns: `movieId`, `title`, `genres`
     - Added columns: `imdbId`, `tmdbId`, `release_year`, `genres_raw`, `genres_list`, `imdb_title_id`
 
 ### Key Data Quality Checks for Week 3
 
-1. Rating values are within [0.5, 5.0]
-2. Duplicate `(userId, movieId)` records handled consistently
-3. Required IDs (`userId`, `movieId`) are non-null
-4. Join coverage between ratings.movieId and movies.movieId is reported as 100%
+The checks came back clean: rating values stayed within [0.5, 5.0], required IDs were present, duplicate `(userId, movieId)` pairs were handled consistently, and join coverage between ratings.movieId and movies.movieId reached 100%.
 
 ---
 
@@ -167,7 +164,7 @@ This project uses a single official source, so no cross-source matching logic is
 
 ### Current Status: Complete
 
-The cleaning notebook was executed successfully and produced Processed Dataset V1 in:
+The cleaning notebook ran successfully and produced Processed Dataset V1 in:
 
 `data/processed/week03_v1/`
 
@@ -247,11 +244,7 @@ This data dictionary reflects the executed Processed Dataset V1 files.
 
 ### Validation Checklist (Executed)
 
-1. Schema confirmed for all processed files.
-2. Null checks for required columns returned zero invalid rows.
-3. Rating bounds check returned zero out-of-range rows.
-4. Duplicate checks returned zero key duplicates in movies and ratings.
-5. Join integrity checks returned zero unmatched movie IDs for ratings and tags.
+All of the validation checks passed: the processed files have the expected schema, required columns have no invalid nulls, rating bounds are respected, duplicate keys are absent in movies and ratings, and the join integrity checks returned no unmatched movie IDs for ratings or tags.
 
 ---
 
@@ -315,46 +308,37 @@ This high sparsity is typical for recommendation domains and justifies collabora
 - genome_scores
 - genome_tags
 
-**Rationale**: Week 3 requires reproducible ingestion and cleaned base tables. Genome processing (high-dimensional tag relevance matrix) is deferred to dimensionality reduction phase (Week 5) without breaking reproducibility.
+The reason for that split is practical: Week 3 needs reproducible ingestion and cleaned base tables, while the genome processing work is better handled in the dimensionality-reduction phase without breaking the pipeline.
 
 ---
 
 ## 7. Ethics and Access Note
 
-### 1) Data Origin
+### 1. Data Origin
 
-The project uses **MovieLens 25M**, provided by GroupLens Research at the University of Minnesota. The dataset consists of:
+The project uses **MovieLens 25M**, provided by GroupLens Research at the University of Minnesota. It includes:
 
 - Anonymized user interactions with movies (ratings and tags)
 - Catalog metadata (titles, genres)
 - Tag metadata and tag relevance scores
 - External links (IMDB, TMDB identifiers)
 
-### 2) Why the Team Is Allowed to Use It
+### 2. Why the Team Is Allowed to Use It
 
-- **Source is publicly distributed** for research and educational use
-- **Team usage is academic and non-commercial**, consistent with terms
-- **Final report will include proper attribution and citation**
+The team is allowed to use it because the source is publicly distributed for research and educational use, the project is academic and non-commercial, and the final report will include the required attribution and citation.
 
 Reference links:
 
 - https://grouplens.org/datasets/movielens/25m/
 - Harper, F. M., and Konstan, J. A. (2015). The MovieLens Datasets: History and Context. ACM Transactions on Interactive Intelligent Systems (TiiS), 5(4), 19:1-19:19.
 
-### 3) Personal-Data Risks
+### 3. Personal-Data Risks
 
-- **No direct PII present**: Dataset contains no names, email addresses, phone numbers, or identifiable external references
-- **Interaction histories as signals**: Timestamped ratings and tags reflect user behavior and preferences
-- **Behavioral re-identification risk**: Detailed interaction patterns could theoretically increase re-identification risk if combined with external data
+There is no direct PII in the dataset, but the timestamped ratings and tags still expose behavior patterns. In theory, those patterns could increase re-identification risk if someone tried to combine them with outside data.
 
-### 4) How Risks Are Reduced
+### 4. How Risks Are Reduced
 
-1. **No attempt to identify or profile real individuals**: Analysis focuses on aggregate patterns and model behavior
-2. **No external linkage for deanonymization**: Project does not cross-reference user IDs with other data sources
-3. **No unauthorized redistribution**: Raw personal-level records remain within project team only
-4. **Aggregate-only reporting**: Final outputs report segment and recommendation metrics, not individual user profiles
-5. **Access control**: Working files restricted to authorized project team members
-6. **Transparency through reproducibility**: All transformation steps documented and auditable
+We reduce that risk by keeping the analysis at an aggregate level, avoiding any attempt to identify real people, not linking user IDs to outside sources, keeping raw records inside the team, and documenting the transformation steps so they can be audited.
 
 ### Compliance Statement
 
@@ -374,7 +358,7 @@ This Week 3 milestone follows MovieLens source access conditions and includes an
 | 6. Scale analysis         | ✅ Complete | Section 6 of this report                  |
 | 7. Ethics and access note | ✅ Complete | Section 7 of this report                  |
 
-**Overall status**: 7 of 7 deliverables complete for Week 3.
+Overall, Week 3 is complete: all seven deliverables are in place and backed by the processed dataset V1 plus the supporting evidence files.
 
 ---
 
@@ -382,10 +366,7 @@ This Week 3 milestone follows MovieLens source access conditions and includes an
 
 ### Immediate (submission packaging)
 
-1. Keep `data/processed/week03_v1/` as the canonical Processed V1 output folder.
-2. Ensure report links and filenames match actual artifacts (`ratings_clean.parquet`, `movies_catalog.parquet`, `tags_clean.parquet`, `movie_genres.parquet`).
-3. Include `week03_cleaning_report.json` and `week03_processed_dictionary_profile.csv` in submission evidence.
-4. Keep run commands documented in `README.md` and notebook execution order reproducible.
+Keep `data/processed/week03_v1/` as the canonical Processed V1 output folder. Make sure the report links and filenames match the actual artifacts (`ratings_clean.parquet`, `movies_catalog.parquet`, `tags_clean.parquet`, `movie_genres.parquet`), include `week03_cleaning_report.json` and `week03_processed_dictionary_profile.csv` in the evidence bundle, and keep the run commands documented in `README.md` so the workflow stays reproducible.
 
 ### Week 4 Preparation
 

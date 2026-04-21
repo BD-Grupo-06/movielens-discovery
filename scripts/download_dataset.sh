@@ -4,13 +4,13 @@ set -euo pipefail
 # Downloads the MovieLens 25M dataset zip into data/raw, extracts it, then removes the zip file.
 #
 # Usage:
-#   ./scripts/download_and_extract.sh
+#   ./scripts/download_dataset.sh
 #
 # Dataset source:
 #   https://files.grouplens.org/datasets/movielens/ml-25m.zip
 
 if [[ $# -ne 0 ]]; then
-  echo "Usage: ./scripts/download_and_extract.sh"
+  echo "Usage: ./scripts/download_dataset.sh"
   exit 1
 fi
 
