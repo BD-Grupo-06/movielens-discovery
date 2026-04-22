@@ -223,7 +223,11 @@ The checks came back clean: rating values stayed within [0.5, 5.0], required IDs
 
 \subsection{Current Status: Complete}
 
-The cleaning notebook ran successfully and produced Processed Dataset V1 in:
+The canonical execution path is the one-command pipeline script:
+
+\texttt{python3 scripts/build\_week03\_pipeline.py --skip-download}
+
+The script and the cleaning notebook now use the same cleaning/profiling logic and produce the same Week 3 artifact structure. Processed Dataset V1 is stored in:
 
 \texttt{data/processed/week03\_v1/}
 

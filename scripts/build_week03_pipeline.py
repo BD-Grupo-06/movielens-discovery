@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""End-to-end Week 3 pipeline for MovieLens 25M."""
+"""End-to-end Week 3 pipeline aligned with EDA + cleaning notebooks."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ ALL_TABLES = list(RAW_FILES.keys())
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Download, extract, clean, and profile MovieLens 25M.")
+    parser = argparse.ArgumentParser(description="Download, profile, clean, and export Week 3 MovieLens artifacts.")
     parser.add_argument("--download-url", default=DOWNLOAD_URL)
     parser.add_argument("--raw-dir", type=Path, default=Path("data/raw"))
     parser.add_argument("--processed-dir", type=Path, default=Path("data/processed/week03_v1"))
@@ -97,6 +97,12 @@ def ensure_dataset(raw_dir: Path, download_url: str, force_download: bool, skip_
         raise FileNotFoundError("Extraction finished, but expected MovieLens files are still missing.")
 
 
+def ensure_all_tables_present(raw_dir: Path) -> None:
+    missing = [str(table_path(raw_dir, table_name)) for table_name in ALL_TABLES if not table_path(raw_dir, table_name).exists()]
+    if missing:
+        raise FileNotFoundError("Missing expected MovieLens tables: " + ", ".join(missing))
+
+
 def to_int64_nullable(column_name: str) -> pl.Expr:
     return pl.col(column_name).cast(pl.Int64, strict=False)
 
@@ -107,70 +113,108 @@ def to_float64(column_name: str) -> pl.Expr:
 
 def profile_columns(df: pl.DataFrame, table_name: str) -> pl.DataFrame:
     rows = df.height
-    records = []
-    for column_name, dtype in df.schema.items():
-        null_count = int(df.select(pl.col(column_name).is_null().sum()).item())
-        records.append(
+    return pl.DataFrame(
+        [
             {
                 "table": table_name,
-                "column": column_name,
+                "column": col,
                 "dtype": str(dtype),
-                "null_count": null_count,
-                "null_pct": round((null_count / rows) * 100, 4) if rows else 0.0,
+                "null_count": int(df.select(pl.col(col).is_null().sum()).item()),
+                "null_pct": round((df.select(pl.col(col).is_null().sum()).item() / rows) * 100, 4) if rows else 0.0,
+            }
+            for col, dtype in df.schema.items()
+        ]
+    )
+
+
+def build_raw_profile(raw_dir: Path) -> pl.DataFrame:
+    rows = []
+    for table_name in ["ratings", "movies", "tags", "links"]:
+        path = table_path(raw_dir, table_name)
+        rows.append(
+            {
+                "table": table_name,
+                "rows": pl.scan_csv(path).select(pl.len()).collect().item(),
+                "size_mb": round(path.stat().st_size / (1024**2), 2),
             }
         )
-    return pl.DataFrame(records)
-
-
-def build_raw_inventory(raw_dir: Path) -> pl.DataFrame:
-    rows = []
-    for table_name in ALL_TABLES:
-        path = table_path(raw_dir, table_name)
-        if path.exists():
-            frame = pl.read_csv(path, infer_schema_length=10_000)
-            rows.append(
-                {
-                    "table": table_name,
-                    "rows": frame.height,
-                    "cols": frame.width,
-                    "size_mb": round(path.stat().st_size / (1024**2), 2),
-                    "scope": "core" if table_name in CORE_TABLES else "optional",
-                }
-            )
     return pl.DataFrame(rows)
 
 
-def build_schema_profile(raw_dir: Path) -> pl.DataFrame:
-    rows = []
-    for table_name in ALL_TABLES:
-        path = table_path(raw_dir, table_name)
-        if path.exists():
-            frame = pl.read_csv(path, infer_schema_length=10_000)
-            for column_name, dtype in frame.schema.items():
-                rows.append({"table": table_name, "column": column_name, "dtype": str(dtype)})
-    return pl.DataFrame(rows)
+def build_eda_artifacts(raw_dir: Path, interim_dir: Path) -> None:
+    core_tables = {
+        "movies": table_path(raw_dir, "movies"),
+        "ratings": table_path(raw_dir, "ratings"),
+        "tags": table_path(raw_dir, "tags"),
+        "links": table_path(raw_dir, "links"),
+    }
+    optional_tables = {
+        "genome_scores": table_path(raw_dir, "genome_scores"),
+        "genome_tags": table_path(raw_dir, "genome_tags"),
+    }
+    tables = {**core_tables, **optional_tables}
 
+    shape_rows: list[dict[str, object]] = []
+    schema_rows: list[dict[str, object]] = []
 
-def build_missing_profile(raw_dir: Path) -> pl.DataFrame:
-    rows = []
-    for table_name in ALL_TABLES:
-        path = table_path(raw_dir, table_name)
-        frame = pl.read_csv(path, infer_schema_length=10_000)
-        row_count = frame.height
-        for column_name in frame.columns:
-            null_count = int(frame.select(pl.col(column_name).is_null().sum()).item())
-            rows.append(
+    for name, path in tables.items():
+        lf = pl.scan_csv(path, infer_schema_length=10_000)
+        n_rows = lf.select(pl.len().alias("rows")).collect().item()
+        sample = pl.read_csv(path, n_rows=2_000, infer_schema_length=10_000)
+
+        shape_rows.append(
+            {
+                "table": name,
+                "rows": n_rows,
+                "cols": sample.width,
+                "size_mb": round(path.stat().st_size / (1024**2), 2),
+                "scope": "core" if name in core_tables else "optional",
+            }
+        )
+
+        for column_name, dtype in sample.schema.items():
+            schema_rows.append(
                 {
-                    "table": table_name,
+                    "table": name,
                     "column": column_name,
-                    "null_count": null_count,
-                    "null_pct": round((null_count / row_count) * 100, 4) if row_count else 0.0,
+                    "sample_dtype": str(dtype),
                 }
             )
-    return pl.DataFrame(rows)
 
+    shape_df = pl.DataFrame(shape_rows).sort("rows", descending=True)
+    schema_df = pl.DataFrame(schema_rows)
 
-def build_quality_checks(raw_dir: Path) -> dict[str, int]:
+    table_usage_recommendation = pl.DataFrame(
+        [
+            {"table": "ratings", "week3_use": "required", "reason": "primary interaction layer and sparsity analysis"},
+            {"table": "movies", "week3_use": "required", "reason": "catalog layer and metadata base"},
+            {"table": "tags", "week3_use": "recommended", "reason": "text signal for future content and hybrid features"},
+            {"table": "links", "week3_use": "recommended", "reason": "external IDs and integration hooks"},
+            {"table": "genome_scores", "week3_use": "optional", "reason": "large feature source for week5+, can be deferred"},
+            {"table": "genome_tags", "week3_use": "optional", "reason": "lookup table for genome_scores tags"},
+        ]
+    )
+
+    missing_rows = []
+    for name, path in tables.items():
+        lf = pl.scan_csv(path, infer_schema_length=10_000)
+        n_rows = lf.select(pl.len()).collect().item()
+        columns = pl.read_csv(path, n_rows=5).columns
+
+        null_counts = lf.select([pl.col(column).is_null().sum().alias(column) for column in columns]).collect()
+        for column in columns:
+            n_null = int(null_counts[0, column])
+            missing_rows.append(
+                {
+                    "table": name,
+                    "column": column,
+                    "null_count": n_null,
+                    "null_pct": round((n_null / n_rows) * 100, 4) if n_rows else 0.0,
+                }
+            )
+
+    missing_df = pl.DataFrame(missing_rows)
+
     movies = pl.read_csv(table_path(raw_dir, "movies"), infer_schema_length=10_000)
     ratings = pl.read_csv(table_path(raw_dir, "ratings"), infer_schema_length=10_000)
     tags = pl.read_csv(table_path(raw_dir, "tags"), infer_schema_length=10_000)
@@ -178,7 +222,7 @@ def build_quality_checks(raw_dir: Path) -> dict[str, int]:
     genome_scores = pl.read_csv(table_path(raw_dir, "genome_scores"), infer_schema_length=10_000)
     genome_tags = pl.read_csv(table_path(raw_dir, "genome_tags"), infer_schema_length=10_000)
 
-    return {
+    checks = {
         "ratings_missing_required": int(
             ratings.select(
                 pl.any_horizontal(
@@ -205,27 +249,18 @@ def build_quality_checks(raw_dir: Path) -> dict[str, int]:
         "genome_tags_duplicate_tagId": int(genome_tags.select(pl.col("tagId").is_duplicated().sum()).item()),
     }
 
-
-def build_join_coverage(raw_dir: Path) -> pl.DataFrame:
-    movies = pl.read_csv(table_path(raw_dir, "movies"), infer_schema_length=10_000)
-    ratings = pl.read_csv(table_path(raw_dir, "ratings"), infer_schema_length=10_000)
-    tags = pl.read_csv(table_path(raw_dir, "tags"), infer_schema_length=10_000)
-    genome_scores = pl.read_csv(table_path(raw_dir, "genome_scores"), infer_schema_length=10_000)
-    genome_tags = pl.read_csv(table_path(raw_dir, "genome_tags"), infer_schema_length=10_000)
-
     movies_ids = movies.select("movieId").unique()
     ratings_ids = ratings.select("movieId").unique()
     tags_ids = tags.select("movieId").unique()
     genome_movie_ids = genome_scores.select("movieId").unique()
     genome_tag_ids = genome_scores.select("tagId").unique()
-    genome_tag_lookup = genome_tags.select("tagId").unique()
 
-    orphan_ratings = ratings_ids.join(movies_ids, on="movieId", how="anti").height
-    orphan_tags = tags_ids.join(movies_ids, on="movieId", how="anti").height
-    orphan_genome_movies = genome_movie_ids.join(movies_ids, on="movieId", how="anti").height
-    orphan_genome_tags = genome_tag_ids.join(genome_tag_lookup, on="tagId", how="anti").height
+    orphan_ratings_movie_ids = ratings_ids.join(movies_ids, on="movieId", how="anti").height
+    orphan_tags_movie_ids = tags_ids.join(movies_ids, on="movieId", how="anti").height
+    orphan_genome_movie_ids = genome_movie_ids.join(movies_ids, on="movieId", how="anti").height
+    orphan_genome_tag_ids = genome_tag_ids.join(genome_tags.select("tagId").unique(), on="tagId", how="anti").height
 
-    return pl.DataFrame(
+    join_coverage_df = pl.DataFrame(
         {
             "relationship_check": [
                 "ratings movieId matched in movies",
@@ -233,37 +268,87 @@ def build_join_coverage(raw_dir: Path) -> pl.DataFrame:
                 "genome_scores movieId matched in movies",
                 "genome_scores tagId matched in genome_tags",
             ],
-            "unmatched_count": [int(orphan_ratings), int(orphan_tags), int(orphan_genome_movies), int(orphan_genome_tags)],
+            "unmatched_count": [
+                int(orphan_ratings_movie_ids),
+                int(orphan_tags_movie_ids),
+                int(orphan_genome_movie_ids),
+                int(orphan_genome_tag_ids),
+            ],
             "coverage_pct": [
-                round((1 - (orphan_ratings / max(1, ratings_ids.height))) * 100, 4),
-                round((1 - (orphan_tags / max(1, tags_ids.height))) * 100, 4),
-                round((1 - (orphan_genome_movies / max(1, genome_movie_ids.height))) * 100, 4),
-                round((1 - (orphan_genome_tags / max(1, genome_tag_ids.height))) * 100, 4),
+                round((1 - (orphan_ratings_movie_ids / max(1, ratings_ids.height))) * 100, 4),
+                round((1 - (orphan_tags_movie_ids / max(1, tags_ids.height))) * 100, 4),
+                round((1 - (orphan_genome_movie_ids / max(1, genome_movie_ids.height))) * 100, 4),
+                round((1 - (orphan_genome_tag_ids / max(1, genome_tag_ids.height))) * 100, 4),
             ],
         }
     )
 
-
-def build_scale_metrics(raw_dir: Path) -> tuple[dict[str, int | float], pl.DataFrame]:
-    ratings = pl.read_csv(table_path(raw_dir, "ratings"), infer_schema_length=10_000)
     users_n = ratings.select(pl.col("userId").n_unique()).item()
     items_n = ratings.select(pl.col("movieId").n_unique()).item()
     interactions_n = ratings.height
     possible_interactions = int(users_n * items_n)
-    density = interactions_n / possible_interactions
+    sparsity = 1 - (interactions_n / possible_interactions)
 
-    metrics = {
+    scale_metrics = {
         "users": int(users_n),
         "items": int(items_n),
         "interactions": int(interactions_n),
         "possible_user_item_pairs": possible_interactions,
-        "density_pct": round(density * 100, 6),
-        "sparsity_pct": round((1 - density) * 100, 6),
+        "density_pct": round((interactions_n / possible_interactions) * 100, 6),
+        "sparsity_pct": round(sparsity * 100, 6),
     }
-    return metrics, build_raw_inventory(raw_dir).sort("size_mb", descending=True)
+
+    table_memory_df = shape_df.select(["table", "rows", "cols", "size_mb", "scope"]).sort("size_mb", descending=True)
+
+    rating_dist = ratings.group_by("rating").len().sort("rating")
+    top_genres = (
+        movies.with_columns(pl.col("genres").str.split("|"))
+        .explode("genres")
+        .group_by("genres")
+        .len()
+        .sort("len", descending=True)
+        .head(15)
+    )
+
+    summary = {
+        "table_shapes": shape_df.to_dicts(),
+        "recommended_table_usage": table_usage_recommendation.to_dicts(),
+        "missing_columns_nonzero": missing_df.filter(pl.col("null_count") > 0).sort(["table", "null_count"], descending=True).to_dicts(),
+        "quality_checks": checks,
+        "join_coverage": join_coverage_df.to_dicts(),
+        "scale_metrics": scale_metrics,
+        "table_memory_estimate_mb": table_memory_df.to_dicts(),
+        "rating_distribution": rating_dist.to_dicts(),
+        "top_genres": top_genres.to_dicts(),
+    }
+
+    summary_path = interim_dir / "week03_eda_summary.json"
+    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+
+    scale_path = interim_dir / "week03_scale_metrics.json"
+    scale_path.write_text(
+        json.dumps({"scale_metrics": scale_metrics, "table_memory_estimate_mb": table_memory_df.to_dicts()}, indent=2),
+        encoding="utf-8",
+    )
+
+    dictionary_profile_df = (
+        schema_df.join(
+            missing_df.select(["table", "column", "null_count", "null_pct"]),
+            on=["table", "column"],
+            how="left",
+        )
+        .with_columns(
+            [
+                pl.col("null_count").fill_null(0),
+                pl.col("null_pct").fill_null(0.0),
+            ]
+        )
+        .sort(["table", "column"])
+    )
+    dictionary_profile_df.write_csv(interim_dir / "week03_dictionary_profile.csv")
 
 
-def clean_movies(raw_dir: Path) -> tuple[int, pl.DataFrame, pl.DataFrame]:
+def clean_movies(raw_dir: Path) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
     movies_raw = pl.read_csv(table_path(raw_dir, "movies"), infer_schema_length=10_000)
     links_raw = pl.read_csv(table_path(raw_dir, "links"), infer_schema_length=10_000)
 
@@ -279,7 +364,11 @@ def clean_movies(raw_dir: Path) -> tuple[int, pl.DataFrame, pl.DataFrame]:
         .filter(pl.col("movieId").is_not_null() & pl.col("title").is_not_null())
         .join(
             links_raw.select(["movieId", "imdbId", "tmdbId"]).with_columns(
-                [to_int64_nullable("movieId"), to_int64_nullable("imdbId"), to_int64_nullable("tmdbId")]
+                [
+                    to_int64_nullable("movieId"),
+                    to_int64_nullable("imdbId"),
+                    to_int64_nullable("tmdbId"),
+                ]
             ),
             on="movieId",
             how="left",
@@ -303,10 +392,10 @@ def clean_movies(raw_dir: Path) -> tuple[int, pl.DataFrame, pl.DataFrame]:
     if duplicate_movie_ids != 0:
         raise ValueError(f"movies_clean has duplicate movieId values: {duplicate_movie_ids}")
 
-    return movies_raw.height, movies_clean, movies_raw
+    return movies_raw, links_raw, movies_clean
 
 
-def clean_ratings(raw_dir: Path) -> tuple[int, pl.DataFrame, pl.DataFrame]:
+def clean_ratings(raw_dir: Path) -> tuple[pl.DataFrame, pl.DataFrame]:
     ratings_raw = pl.read_csv(table_path(raw_dir, "ratings"), infer_schema_length=10_000)
     ratings_clean = (
         ratings_raw.select(["userId", "movieId", "rating", "timestamp"])
@@ -333,10 +422,10 @@ def clean_ratings(raw_dir: Path) -> tuple[int, pl.DataFrame, pl.DataFrame]:
     if duplicate_pairs != 0:
         raise ValueError(f"ratings_clean has duplicate (userId, movieId) pairs: {duplicate_pairs}")
 
-    return ratings_raw.height, ratings_clean, ratings_raw
+    return ratings_raw, ratings_clean
 
 
-def clean_tags(raw_dir: Path) -> tuple[int, pl.DataFrame, pl.DataFrame]:
+def clean_tags(raw_dir: Path) -> tuple[pl.DataFrame, pl.DataFrame]:
     tags_raw = pl.read_csv(table_path(raw_dir, "tags"), infer_schema_length=10_000)
     tags_clean = (
         tags_raw.select(["userId", "movieId", "tag", "timestamp"])
@@ -365,11 +454,7 @@ def clean_tags(raw_dir: Path) -> tuple[int, pl.DataFrame, pl.DataFrame]:
         .sort(["userId", "movieId", "timestamp"])
     )
 
-    duplicate_rows = int(tags_clean.is_duplicated().sum())
-    if duplicate_rows != 0:
-        raise ValueError(f"tags_clean has duplicate full rows: {duplicate_rows}")
-
-    return tags_raw.height, tags_clean, tags_raw
+    return tags_raw, tags_clean
 
 
 def build_movie_genres(movies_clean: pl.DataFrame) -> pl.DataFrame:
@@ -382,22 +467,73 @@ def build_movie_genres(movies_clean: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def write_outputs(
-    processed_dir: Path,
-    interim_dir: Path,
-    movies_clean: pl.DataFrame,
-    ratings_clean: pl.DataFrame,
-    tags_clean: pl.DataFrame,
-    movie_genres: pl.DataFrame,
-    raw_inventory: pl.DataFrame,
-    schema_profile: pl.DataFrame,
-    missing_df: pl.DataFrame,
-    quality_checks: dict[str, int],
-    join_coverage_df: pl.DataFrame,
-    scale_metrics: dict[str, int | float],
-    table_memory_df: pl.DataFrame,
-    row_changes: dict[str, dict[str, int]],
-) -> None:
+def to_notebook_style_path(path: Path) -> str:
+    as_posix = path.as_posix()
+    if path.is_absolute() or as_posix.startswith("../"):
+        return as_posix
+    return f"../{as_posix}"
+
+
+def write_cleaning_artifacts(processed_dir: Path, raw_dir: Path) -> None:
+    raw_profile = build_raw_profile(raw_dir)
+
+    movies_raw, links_raw, movies_clean = clean_movies(raw_dir)
+    ratings_raw, ratings_clean = clean_ratings(raw_dir)
+    tags_raw, tags_clean = clean_tags(raw_dir)
+    movie_genres = build_movie_genres(movies_clean)
+
+    join_checks = pl.DataFrame(
+        {
+            "relationship": [
+                "ratings.movieId in movies_clean.movieId",
+                "tags.movieId in movies_clean.movieId",
+            ],
+            "unmatched_count": [
+                int(
+                    ratings_clean.select("movieId")
+                    .unique()
+                    .join(movies_clean.select("movieId").unique(), on="movieId", how="anti")
+                    .height
+                ),
+                int(
+                    tags_clean.select("movieId")
+                    .unique()
+                    .join(movies_clean.select("movieId").unique(), on="movieId", how="anti")
+                    .height
+                ),
+            ],
+        }
+    )
+
+    before_after = pl.DataFrame(
+        [
+            {
+                "table": "movies",
+                "raw_rows": movies_raw.height,
+                "clean_rows": movies_clean.height,
+                "rows_removed": movies_raw.height - movies_clean.height,
+            },
+            {
+                "table": "ratings",
+                "raw_rows": ratings_raw.height,
+                "clean_rows": ratings_clean.height,
+                "rows_removed": ratings_raw.height - ratings_clean.height,
+            },
+            {
+                "table": "tags",
+                "raw_rows": tags_raw.height,
+                "clean_rows": tags_clean.height,
+                "rows_removed": tags_raw.height - tags_clean.height,
+            },
+            {
+                "table": "links_as_joined_columns",
+                "raw_rows": links_raw.height,
+                "clean_rows": movies_clean.select(["movieId", "imdbId", "tmdbId"]).height,
+                "rows_removed": links_raw.height - movies_clean.select(["movieId", "imdbId", "tmdbId"]).height,
+            },
+        ]
+    )
+
     movies_path = processed_dir / "movies_catalog.parquet"
     ratings_path = processed_dir / "ratings_clean.parquet"
     tags_path = processed_dir / "tags_clean.parquet"
@@ -410,108 +546,51 @@ def write_outputs(
     tags_clean.write_parquet(tags_path)
     movie_genres.write_parquet(genres_path)
 
-    processed_dictionary = (
-        schema_profile.join(missing_df, on=["table", "column"], how="left")
-        .with_columns([
-            pl.col("null_count").fill_null(0),
-            pl.col("null_pct").fill_null(0.0),
-        ])
-        .sort(["table", "column"])
+    processed_dictionary = pl.concat(
+        [
+            profile_columns(movies_clean, "movies_catalog"),
+            profile_columns(ratings_clean, "ratings_clean"),
+            profile_columns(tags_clean, "tags_clean"),
+            profile_columns(movie_genres, "movie_genres"),
+        ],
+        how="vertical",
     )
-    processed_dictionary.write_csv(dictionary_path)
+    processed_dictionary.sort(["table", "column"]).write_csv(dictionary_path)
 
-    report = {
-        "input_tables": raw_inventory.to_dicts(),
-        "quality_checks": quality_checks,
-        "join_checks": join_coverage_df.to_dicts(),
-        "row_changes": row_changes,
+    cleaning_report = {
+        "input_tables": raw_profile.to_dicts(),
+        "row_changes": before_after.to_dicts(),
+        "join_checks": join_checks.to_dicts(),
         "key_decisions": [
             "Merged links into movies_catalog for direct imdbId/tmdbId access",
             "Preserved null tmdbId values and documented them as expected source incompleteness",
             "Deferred genome tables to Week 5 for representation work",
         ],
-        "output_tables": [str(movies_path), str(ratings_path), str(tags_path), str(genres_path), str(dictionary_path)],
+        "output_tables": [
+            to_notebook_style_path(movies_path),
+            to_notebook_style_path(ratings_path),
+            to_notebook_style_path(tags_path),
+            to_notebook_style_path(genres_path),
+            to_notebook_style_path(dictionary_path),
+        ],
     }
-    report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    report_path.write_text(json.dumps(cleaning_report, indent=2), encoding="utf-8")
 
-    (interim_dir / "week03_eda_summary.json").write_text(
-        json.dumps(
-            {
-                "table_shapes": raw_inventory.to_dicts(),
-                "missing_columns_nonzero": missing_df.filter(pl.col("null_count") > 0).to_dicts(),
-                "quality_checks": quality_checks,
-                "join_coverage": join_coverage_df.to_dicts(),
-                "scale_metrics": scale_metrics,
-                "table_memory_estimate_mb": table_memory_df.to_dicts(),
-            },
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
-    (interim_dir / "week03_scale_metrics.json").write_text(
-        json.dumps({"scale_metrics": scale_metrics, "table_memory_estimate_mb": table_memory_df.to_dicts()}, indent=2),
-        encoding="utf-8",
-    )
-    processed_dictionary.write_csv(interim_dir / "week03_dictionary_profile.csv")
-
-    print(f"Wrote processed outputs to {processed_dir}")
-    print(f"Wrote interim profiling outputs to {interim_dir}")
+    print(f"Loaded raw rows: movies={movies_raw.height}, ratings={ratings_raw.height}, tags={tags_raw.height}")
+    print(f"Cleaned rows: movies={movies_clean.height}, ratings={ratings_clean.height}, tags={tags_clean.height}")
 
 
 def main() -> None:
     args = parse_args()
     ensure_directories(args.raw_dir, args.processed_dir, args.interim_dir)
     ensure_dataset(args.raw_dir, args.download_url, args.force_download, args.skip_download, args.keep_archive)
+    ensure_all_tables_present(args.raw_dir)
 
-    raw_inventory = build_raw_inventory(args.raw_dir)
-    schema_profile = build_schema_profile(args.raw_dir)
-    missing_df = build_missing_profile(args.raw_dir)
-    quality_checks = build_quality_checks(args.raw_dir)
-    join_coverage_df = build_join_coverage(args.raw_dir)
-    scale_metrics, table_memory_df = build_scale_metrics(args.raw_dir)
+    build_eda_artifacts(args.raw_dir, args.interim_dir)
+    write_cleaning_artifacts(args.processed_dir, args.raw_dir)
 
-    movies_raw_rows, movies_clean, movies_raw = clean_movies(args.raw_dir)
-    ratings_raw_rows, ratings_clean, ratings_raw = clean_ratings(args.raw_dir)
-    tags_raw_rows, tags_clean, tags_raw = clean_tags(args.raw_dir)
-    movie_genres = build_movie_genres(movies_clean)
-
-    print(f"Loaded raw rows: movies={movies_raw_rows}, ratings={ratings_raw_rows}, tags={tags_raw_rows}")
-    print(f"Cleaned rows: movies={movies_clean.height}, ratings={ratings_clean.height}, tags={tags_clean.height}")
-
-    row_changes = {
-        "movies": {
-            "raw_rows": movies_raw.height,
-            "clean_rows": movies_clean.height,
-            "rows_removed": movies_raw.height - movies_clean.height,
-        },
-        "ratings": {
-            "raw_rows": ratings_raw.height,
-            "clean_rows": ratings_clean.height,
-            "rows_removed": ratings_raw.height - ratings_clean.height,
-        },
-        "tags": {
-            "raw_rows": tags_raw.height,
-            "clean_rows": tags_clean.height,
-            "rows_removed": tags_raw.height - tags_clean.height,
-        },
-    }
-
-    write_outputs(
-        args.processed_dir,
-        args.interim_dir,
-        movies_clean,
-        ratings_clean,
-        tags_clean,
-        movie_genres,
-        raw_inventory,
-        schema_profile,
-        missing_df,
-        quality_checks,
-        join_coverage_df,
-        scale_metrics,
-        table_memory_df,
-        row_changes,
-    )
+    print(f"Wrote processed outputs to {args.processed_dir}")
+    print(f"Wrote interim profiling outputs to {args.interim_dir}")
 
 
 if __name__ == "__main__":
