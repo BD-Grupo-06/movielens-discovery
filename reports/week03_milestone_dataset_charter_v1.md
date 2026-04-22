@@ -1,4 +1,4 @@
-# Week 3 Milestone Report: Dataset Charter and Processed Dataset V1
+# Week 3 Milestone Dataset Charter V1
 
 ## Executive Summary
 
@@ -330,7 +330,7 @@ The team is allowed to use it because the source is publicly distributed for res
 Reference links:
 
 - https://grouplens.org/datasets/movielens/25m/
-- Harper, F. M., and Konstan, J. A. (2015). The MovieLens Datasets: History and Context. ACM Transactions on Interactive Intelligent Systems (TiiS), 5(4), 19:1-19:19.
+- https://files.grouplens.org/datasets/movielens/ml-25m-README.html
 
 ### 3. Personal-Data Risks
 

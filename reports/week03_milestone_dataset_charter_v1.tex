@@ -1,0 +1,487 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    pdftitle={Week 3 Milestone Dataset Charter V1},
+    pdfauthor={MovieLens Discovery Project Team}
+}
+
+\setstretch{1.08}
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+\title{Week 3 Milestone Dataset Charter V1}
+\date{April 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Executive Summary}
+
+This report pulls together the seven Week 3 deliverables for the semester project. The goal here is straightforward: show that the topic is valid, the source is allowed, and the first cleaned dataset build is reproducible.
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Project title}: Personalized Movie Discovery and Recommendation Engine (MovieLens 25M)
+    \item \textbf{Course}: Semester Project: Domain Discovery, Recommendation, and Graph Intelligence
+    \item \textbf{Milestone objective}: Prove valid domain, valid data source, and reproducible first dataset build
+    \item \textbf{Report date}: April 2026
+    \item \textbf{Status}: 7 of 7 deliverables completed; processed dataset V1 generated and validated
+\end{itemize}
+
+\section{Project Proposal}
+
+\subsection{Project Title}
+
+Personalized Movie Discovery and Recommendation Engine (MovieLens 25M)
+
+\subsection{Domain}
+
+Entertainment recommendation systems.
+
+\subsection{Problem Statement}
+
+Users face a large movie catalog and need relevant, personalized discovery support. The project builds a data product that starts from raw interaction data and produces ranked movie recommendations, interpretable movie segments, and graph-based insights.
+
+\subsection{Expected Product Questions}
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item Which movies are similar in feature and behavior space?
+    \item Which movies belong to the same latent segment?
+    \item Which movies should be recommended next for each user?
+    \item Which movies are central in the interaction graph?
+\end{enumerate}
+
+\subsection{Why MovieLens 25M Is Suitable for the Full Course}
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{Non-trivial scale}: 25M ratings, 162K users, 59K movies
+    \item \textbf{Multi-table structure}: catalog, interactions, tags, genome relevance, external links
+    \item \textbf{Strong fit to course layers}:
+    \begin{itemize}[leftmargin=1.5em]
+        \item Catalog layer (movies)
+        \item Feature layer (tags, genome, derived aggregates)
+        \item Interaction layer (ratings)
+        \item Graph layer (user-item projections, item-item similarity)
+        \item Pipeline layer (reproducible ingestion and transformation)
+    \end{itemize}
+    \item \textbf{Clear provenance and academic use terms} from GroupLens Research
+    \item \textbf{Enables full semester arc}: from ingestion $\rightarrow$ representation $\rightarrow$ clustering $\rightarrow$ recommendation $\rightarrow$ graph analytics $\rightarrow$ defense
+\end{enumerate}
+
+\subsection{Week 3 Scope Note}
+
+For Week 3, we stay focused on the first reproducible data build and the supporting documentation around it. Model training and the more advanced analysis work come later, in Weeks 5--14.
+
+\section{Source Inventory}
+
+\subsection{Primary Dataset}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Dataset name}: MovieLens 25M
+    \item \textbf{Official page}: \url{https://grouplens.org/datasets/movielens/25m/}
+    \item \textbf{Direct download}: \url{https://files.grouplens.org/datasets/movielens/ml-25m.zip}
+    \item \textbf{Dataset README}: \url{https://files.grouplens.org/datasets/movielens/ml-25m-README.html}
+\end{itemize}
+
+\subsection{License and Access Conditions}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Provider}: GroupLens Research, University of Minnesota
+    \item \textbf{Use condition summary}: Research and educational use; attribution required; commercial use requires permission
+    \item \textbf{Access method}: Direct public download (no account required)
+\end{itemize}
+
+\subsection{Citation}
+
+F. Maxwell Harper and Joseph A. Konstan. 2015. \emph{The MovieLens Datasets: History and Context}. ACM Transactions on Interactive Intelligent Systems (TiiS) 5, 4: 19:1--19:19. \url{https://doi.org/10.1145/2827872}
+
+\subsection{Raw File Formats}
+
+The ZIP archive includes these CSV files:
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item \texttt{ratings.csv} --- user-movie interactions
+    \item \texttt{movies.csv} --- catalog metadata
+    \item \texttt{tags.csv} --- user-generated tags
+    \item \texttt{links.csv} --- external identifiers (IMDB, TMDB)
+    \item \texttt{genome-scores.csv} --- tag relevance matrix
+    \item \texttt{genome-tags.csv} --- tag dictionary
+\end{enumerate}
+
+\subsection{Estimated Storage}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Compressed}: approximately 250 MB
+    \item \textbf{Uncompressed working size}: approximately 1.0--1.5 GB (including interim outputs)
+\end{itemize}
+
+\subsection{Week 3 Compliance}
+
+Because the project uses one official source, Week 3 does not need cross-source matching logic.
+
+\section{Schema Draft}
+
+\subsection{Entity Tables}
+
+\subsubsection*{movies}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{movieId} (int, primary key): numeric identifier
+    \item \texttt{title} (string): movie title, often includes release year in parentheses
+    \item \texttt{genres} (string): pipe-separated genre categories
+\end{itemize}
+
+\subsubsection*{ratings}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{userId} (int): anonymized user identifier
+    \item \texttt{movieId} (int, foreign key $\rightarrow$ movies.movieId): movie identifier
+    \item \texttt{rating} (float): user's numeric rating [0.5, 5.0], half-star granularity
+    \item \texttt{timestamp} (int): Unix epoch seconds when rating was created
+    \item Candidate primary key: \texttt{(userId, movieId)} --- one rating per user-movie pair
+\end{itemize}
+
+\subsubsection*{tags}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{userId} (int): anonymized user identifier
+    \item \texttt{movieId} (int, foreign key $\rightarrow$ movies.movieId): movie identifier
+    \item \texttt{tag} (string): user-generated tag (e.g., ``funny'', ``action'')
+    \item \texttt{timestamp} (int): Unix epoch seconds when tag was created
+\end{itemize}
+
+\subsubsection*{genome-tags}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{tagId} (int, primary key): numeric tag identifier
+    \item \texttt{tag} (string): standardized tag string from tag genome
+\end{itemize}
+
+\subsubsection*{genome-scores}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{movieId} (int, foreign key $\rightarrow$ movies.movieId): movie identifier
+    \item \texttt{tagId} (int, foreign key $\rightarrow$ genome-tags.tagId): tag identifier
+    \item \texttt{relevance} (float): tag relevance score [0.0, 1.0]
+\end{itemize}
+
+\subsubsection*{links}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{movieId} (int, primary key, foreign key $\rightarrow$ movies.movieId): movie identifier
+    \item \texttt{imdbId} (int): IMDB identifier
+    \item \texttt{tmdbId} (int): TMDB (The Movie Database) identifier
+\end{itemize}
+
+\subsection{Expected Joins}
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item \texttt{ratings LEFT JOIN movies} ON \texttt{ratings.movieId = movies.movieId}
+    \item \texttt{tags LEFT JOIN movies} ON \texttt{tags.movieId = movies.movieId}
+    \item \texttt{genome-scores LEFT JOIN movies} ON \texttt{genome-scores.movieId = movies.movieId}
+    \item \texttt{genome-scores LEFT JOIN genome-tags} ON \texttt{genome-scores.tagId = genome-tags.tagId}
+    \item \texttt{movies LEFT JOIN links} ON \texttt{movies.movieId = links.movieId}
+\end{enumerate}
+
+\subsection{Processed Week 3 Outputs}
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item \textbf{ratings\_clean.parquet}
+    \begin{itemize}[leftmargin=1.5em]
+        \item Cleaned from ratings.csv after range, null, and duplicate checks
+        \item Columns: \texttt{userId}, \texttt{movieId}, \texttt{rating}, \texttt{timestamp}, \texttt{rated\_at}
+    \end{itemize}
+
+    \item \textbf{movies\_catalog.parquet}
+    \begin{itemize}[leftmargin=1.5em]
+        \item Catalog table with \texttt{links} merged in so \texttt{imdbId} and \texttt{tmdbId} are immediately available
+        \item Base columns: \texttt{movieId}, \texttt{title}, \texttt{genres}
+        \item Added columns: \texttt{imdbId}, \texttt{tmdbId}, \texttt{release\_year}, \texttt{genres\_raw}, \texttt{genres\_list}, \texttt{imdb\_title\_id}
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Key Data Quality Checks for Week 3}
+
+The checks came back clean: rating values stayed within [0.5, 5.0], required IDs were present, duplicate \texttt{(userId, movieId)} pairs were handled consistently, and join coverage between ratings.movieId and movies.movieId reached 100\%.
+
+\section{Processed Dataset V1 Status}
+
+\subsection{Current Status: Complete}
+
+The cleaning notebook ran successfully and produced Processed Dataset V1 in:
+
+\texttt{data/processed/week03\_v1/}
+
+\subsubsection*{Produced Outputs}
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item \texttt{movies\_catalog.parquet}
+    \item \texttt{ratings\_clean.parquet}
+    \item \texttt{tags\_clean.parquet}
+    \item \texttt{movie\_genres.parquet}
+    \item \texttt{week03\_processed\_dictionary\_profile.csv}
+    \item \texttt{week03\_cleaning\_report.json}
+\end{enumerate}
+
+\subsubsection*{Verification Summary (post-run)}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item movies\_rows: 62,423
+    \item ratings\_rows: 25,000,095
+    \item tags\_rows: 1,093,351
+    \item movie\_genres\_rows: 107,245
+    \item dup\_movies\_movieId: 0
+    \item dup\_ratings\_user\_movie: 0
+    \item dup\_tags\_fullrow: 0
+    \item ratings\_null\_required: 0
+    \item tags\_null\_required: 0
+    \item movies\_null\_required: 0
+    \item ratings\_out\_of\_range: 0
+    \item movies\_tmdb\_null: 107
+    \item ratings\_movieid\_unmatched: 0
+    \item tags\_movieid\_unmatched: 0
+\end{itemize}
+
+\section{Data Dictionary Draft}
+
+This data dictionary reflects the executed Processed Dataset V1 files.
+
+\subsection{ratings\_clean.parquet}
+
+\begin{longtable}{@{}p{0.22\textwidth}p{0.18\textwidth}p{0.52\textwidth}@{}}
+\toprule
+\textbf{Column} & \textbf{Type} & \textbf{Description} \\
+\midrule
+\endhead
+userId & int64 & Anonymized user identifier \\
+movieId & int64 & Movie identifier \\
+rating & float64 & Explicit user rating \\
+timestamp & int64 & Rating timestamp (Unix epoch) \\
+rated\_at & datetime & Parsed UTC datetime from epoch \\
+\bottomrule
+\end{longtable}
+
+\subsection{movies\_catalog.parquet}
+
+\begin{longtable}{@{}p{0.22\textwidth}p{0.18\textwidth}p{0.52\textwidth}@{}}
+\toprule
+\textbf{Column} & \textbf{Type} & \textbf{Description} \\
+\midrule
+\endhead
+movieId & int64 & Movie identifier \\
+title & string & Movie title \\
+genres & string & Original genres string from source \\
+imdbId & int64 & IMDB numeric identifier \\
+tmdbId & int64 & TMDB numeric identifier (107 nulls expected) \\
+release\_year & int64 & Parsed year from title when available \\
+genres\_raw & string & Genres with \texttt{(no genres listed)} normalized \\
+genres\_list & list[string] & Tokenized list of genres \\
+imdb\_title\_id & string & Formatted IMDB key (\texttt{tt...}) \\
+\bottomrule
+\end{longtable}
+
+\subsection{tags\_clean.parquet}
+
+\begin{longtable}{@{}p{0.22\textwidth}p{0.18\textwidth}p{0.52\textwidth}@{}}
+\toprule
+\textbf{Column} & \textbf{Type} & \textbf{Description} \\
+\midrule
+\endhead
+userId & int64 & Anonymized user identifier \\
+movieId & int64 & Movie identifier \\
+tag & string & Original cleaned tag text (trimmed) \\
+timestamp & int64 & Tag timestamp (Unix epoch) \\
+tag\_normalized & string & Lowercased normalization for modeling \\
+tagged\_at & datetime & Parsed UTC datetime from epoch \\
+\bottomrule
+\end{longtable}
+
+\subsection{movie\_genres.parquet}
+
+\begin{longtable}{@{}p{0.22\textwidth}p{0.18\textwidth}p{0.52\textwidth}@{}}
+\toprule
+\textbf{Column} & \textbf{Type} & \textbf{Description} \\
+\midrule
+\endhead
+movieId & int64 & Movie identifier \\
+genre & string & One genre token per movie row \\
+\bottomrule
+\end{longtable}
+
+\subsection{Validation Checklist (Executed)}
+
+All of the validation checks passed: the processed files have the expected schema, required columns have no invalid nulls, rating bounds are respected, duplicate keys are absent in movies and ratings, and the join integrity checks returned no unmatched movie IDs for ratings or tags.
+
+\section{Scale Analysis}
+
+\subsection{Dataset Scale (from EDA Profiling)}
+
+\begin{longtable}{@{}p{0.20\textwidth}r r r p{0.18\textwidth}@{}}
+\toprule
+\textbf{Table} & \textbf{Rows} & \textbf{Columns} & \textbf{Size (MB)} & \textbf{Scope} \\
+\midrule
+\endhead
+ratings & 25,000,095 & 4 & 646.84 & core \\
+movies & 62,423 & 3 & 2.90 & core \\
+tags & 1,093,360 & 4 & 37.01 & core \\
+links & 62,423 & 3 & 1.31 & core \\
+genome\_scores & 15,584,448 & 3 & 415.00 & optional \\
+genome\_tags & 1,128 & 2 & 0.02 & optional \\
+\bottomrule
+\end{longtable}
+
+\textbf{Total uncompressed raw size}: approximately 1.1 GB
+
+\subsection{Interaction Matrix Scale}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Unique users}: 162,541
+    \item \textbf{Unique items (movies with ratings)}: 59,047
+    \item \textbf{Observed interactions}: 25,000,095
+    \item \textbf{Possible user-item pairs}: $162{,}541 \times 59{,}047 = 9{,}597{,}558{,}427$
+    \item \textbf{Density}: $\frac{25{,}000{,}095}{9{,}597{,}558{,}427} = 0.2605\%$
+    \item \textbf{Sparsity}: $1 - 0.002605 = 99.7395\%$
+\end{itemize}
+
+This high sparsity is typical for recommendation domains and justifies collaborative filtering and matrix-factorization approaches later in the course.
+
+\subsection{Data Quality Checks Executed}
+
+\begin{longtable}{@{}p{0.44\textwidth}p{0.20\textwidth}p{0.28\textwidth}@{}}
+\toprule
+\textbf{Check} & \textbf{Result} & \textbf{Notes} \\
+\midrule
+\endhead
+Required fields (userId, movieId) missing in ratings & 0 & 100\% coverage \\
+Ratings outside [0.5, 5.0] & 0 & All ratings valid \\
+Duplicate (userId, movieId) pairs & 0 & No duplicate interactions \\
+Duplicate full rows in tags & 0 & No exact duplicates \\
+Tags dropped by cleaning & 9 rows & 1,093,360 $\rightarrow$ 1,093,351 \\
+Missing tmdbId in links & 107 rows (0.17\%) & Acceptable; imdbId available \\
+Join coverage: ratings $\rightarrow$ movies & 100\% & All rated movies in catalog \\
+Join coverage: tags $\rightarrow$ movies & 100\% & All tagged movies in catalog \\
+Join coverage: genome-scores $\rightarrow$ movies & 100\% & All genome movies in catalog \\
+\bottomrule
+\end{longtable}
+
+\subsection{Evidence Files Generated}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{data/interim/week03\_eda\_summary.json} --- Full profiling metrics
+    \item \texttt{data/interim/week03\_scale\_metrics.json} --- Scale and sparsity metrics
+    \item \texttt{data/interim/week03\_dictionary\_profile.csv} --- Column-level null/type analysis
+\end{itemize}
+
+\subsection{Table Scope Decision}
+
+\textbf{Week 3 (core/required):}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item ratings
+    \item movies
+    \item tags
+    \item links (merged into movies\_catalog)
+\end{itemize}
+
+\textbf{Defer to later weeks:}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item genome\_scores
+    \item genome\_tags
+\end{itemize}
+
+The reason for that split is practical: Week 3 needs reproducible ingestion and cleaned base tables, while the genome processing work is better handled in the dimensionality-reduction phase without breaking the pipeline.
+
+\section{Ethics and Access Note}
+
+\subsection{Data Origin}
+
+The project uses \textbf{MovieLens 25M}, provided by GroupLens Research at the University of Minnesota. It includes:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Anonymized user interactions with movies (ratings and tags)
+    \item Catalog metadata (titles, genres)
+    \item Tag metadata and tag relevance scores
+    \item External links (IMDB, TMDB identifiers)
+\end{itemize}
+
+\subsection{Why the Team Is Allowed to Use It}
+
+The team is allowed to use it because the source is publicly distributed for research and educational use, the project is academic and non-commercial, and the final report will include the required attribution and citation.
+
+Reference links:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \url{https://grouplens.org/datasets/movielens/25m/}
+    \item \url{https://files.grouplens.org/datasets/movielens/ml-25m-README.html}
+\end{itemize}
+
+\subsection{Personal-Data Risks}
+
+There is no direct PII in the dataset, but the timestamped ratings and tags still expose behavior patterns. In theory, those patterns could increase re-identification risk if someone tried to combine them with outside data.
+
+\subsection{How Risks Are Reduced}
+
+We reduce that risk by keeping the analysis at an aggregate level, avoiding any attempt to identify real people, not linking user IDs to outside sources, keeping raw records inside the team, and documenting the transformation steps so they can be audited.
+
+\subsection{Compliance Statement}
+
+This Week 3 milestone follows MovieLens source access conditions and includes an explicit reproducible ingestion pipeline for transparency and auditability.
+
+\section{Final Week 3 Status}
+
+\begin{longtable}{@{}p{0.32\textwidth}p{0.17\textwidth}p{0.43\textwidth}@{}}
+\toprule
+\textbf{Deliverable} & \textbf{Status} & \textbf{Evidence} \\
+\midrule
+\endhead
+1. Project proposal & Complete & Section 1 of this report \\
+2. Source inventory & Complete & Section 2 of this report \\
+3. Schema draft & Complete & Section 3 of this report \\
+4. Processed dataset V1 & Complete & Section 4 and \texttt{data/processed/week03\_v1/} \\
+5. Data dictionary draft & Complete & Section 5 of this report \\
+6. Scale analysis & Complete & Section 6 of this report \\
+7. Ethics and access note & Complete & Section 7 of this report \\
+\bottomrule
+\end{longtable}
+
+Overall, Week 3 is complete: all seven deliverables are in place and backed by the processed dataset V1 plus the supporting evidence files.
+
+\section{Next Steps}
+
+\subsection{Immediate (submission packaging)}
+
+Keep \texttt{data/processed/week03\_v1/} as the canonical Processed V1 output folder. Make sure the report links and filenames match the actual artifacts (\texttt{ratings\_clean.parquet}, \texttt{movies\_catalog.parquet}, \texttt{tags\_clean.parquet}, \texttt{movie\_genres.parquet}), include \texttt{week03\_cleaning\_report.json} and \texttt{week03\_processed\_dictionary\_profile.csv} in the evidence bundle, and keep the run commands documented in \texttt{README.md} so the workflow stays reproducible.
+
+\subsection{Week 4 Preparation}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Design feature engineering pipeline for Week 5 representation phase
+    \item Identify key feature categories: temporal, rating-aggregate, tag-based, genre-based
+\end{itemize}
+
+\subsection{Week 5 and Beyond}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Dimensionality reduction (PCA, SVD, optional t-SNE)
+    \item Clustering analysis (K-means, DBSCAN)
+    \item Recommendation and ranking systems
+    \item Graph analytics and centrality measures
+\end{itemize}
+
+\end{document}
