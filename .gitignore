@@ -19,3 +19,4 @@ conda-meta/
 .env
 .env.*
 *.env
+skills/*
