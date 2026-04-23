@@ -92,7 +92,7 @@ movielens-discovery/
 
 - Keep raw data immutable under `data/raw/`.
 - Write cleaned/transformed tables to `data/interim/` and `data/processed/`.
-- Prefer scripts in `scripts/` and code in `src/` over notebook-only workflows.
+- Prefer scripts in `scripts/` and code in `src/` over notebook-only workflows
 - Save experiment outputs, plots, and model artifacts in `artifacts/`.
 
 ## Assignment Deliverables Mapping
