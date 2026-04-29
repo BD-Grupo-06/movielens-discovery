@@ -20,3 +20,4 @@ conda-meta/
 .env.*
 *.env
 skills/*
+.github
