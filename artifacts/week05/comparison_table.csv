@@ -1,0 +1,3 @@
+method,components,cumulative_variance,reconstruction_error
+PCA,20,0.9012211152256832,0.09877888477431665
+TruncatedSVD,200,0.3571905533699927,0.6373208960245731
