@@ -1,0 +1,5 @@
+threshold,components_needed,cumulative_variance
+80%,30,0.8095912258448914
+90%,36,0.9058062043298649
+95%,40,0.9608906122978977
+all_features,45,1.0

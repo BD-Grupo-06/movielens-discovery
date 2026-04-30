@@ -366,11 +366,10 @@ This high sparsity is typical for recommendation domains and justifies collabora
 
 \subsection{Data Quality Checks Executed}
 
-\begin{longtable}{@{}p{0.44\textwidth}p{0.20\textwidth}p{0.28\textwidth}@{}}
+\begin{tabular}{@{}p{0.44\textwidth}p{0.20\textwidth}p{0.28\textwidth}@{}}
 \toprule
 \textbf{Check} & \textbf{Result} & \textbf{Notes} \\
 \midrule
-\endhead
 Required fields (userId, movieId) missing in ratings & 0 & 100\% coverage \\
 Ratings outside [0.5, 5.0] & 0 & All ratings valid \\
 Duplicate (userId, movieId) pairs & 0 & No duplicate interactions \\
@@ -381,7 +380,7 @@ Join coverage: ratings $\rightarrow$ movies & 100\% & All rated movies in catalo
 Join coverage: tags $\rightarrow$ movies & 100\% & All tagged movies in catalog \\
 Join coverage: genome-scores $\rightarrow$ movies & 100\% & All genome movies in catalog \\
 \bottomrule
-\end{longtable}
+\end{tabular}
 
 \subsection{Evidence Files Generated}
 
@@ -449,7 +448,7 @@ This Week 3 milestone follows MovieLens source access conditions and includes an
 
 \section{Final Week 3 Status}
 
-\begin{longtable}{@{}p{0.32\textwidth}p{0.17\textwidth}p{0.43\textwidth}@{}}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.32\textwidth}>{\raggedright\arraybackslash}p{0.17\textwidth}>{\raggedright\arraybackslash}p{0.43\textwidth}@{}}
 \toprule
 \textbf{Deliverable} & \textbf{Status} & \textbf{Evidence} \\
 \midrule
@@ -470,7 +469,18 @@ Overall, Week 3 is complete: all seven deliverables are in place and backed by t
 
 \subsection{Immediate (submission packaging)}
 
-Keep \texttt{data/processed/week03\_v1/} as the canonical Processed V1 output folder. Make sure the report links and filenames match the actual artifacts (\texttt{ratings\_clean.parquet}, \texttt{movies\_catalog.parquet}, \texttt{tags\_clean.parquet}, \texttt{movie\_genres.parquet}), include \texttt{week03\_cleaning\_report.json} and \texttt{week03\_processed\_dictionary\_profile.csv} in the evidence bundle, and keep the run commands documented in \texttt{README.md} so the workflow stays reproducible.
+Keep \texttt{data/processed/week03\_v1/} as the canonical Processed V1 output folder. Make sure the report links and filenames match the actual artifacts:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{ratings\_clean.parquet}
+    \item \texttt{movies\_catalog.parquet}
+    \item \texttt{tags\_clean.parquet}
+    \item \texttt{movie\_genres.parquet}
+    \item \texttt{week03\_cleaning\_report.json}
+    \item \texttt{week03\_processed\_dictionary\_profile.csv}
+\end{itemize}
+
+Keep the run commands documented in \texttt{README.md} so the workflow stays reproducible.
 
 \subsection{Week 4 Preparation}
 

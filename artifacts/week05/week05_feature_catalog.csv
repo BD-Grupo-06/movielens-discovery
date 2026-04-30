@@ -1,0 +1,46 @@
+feature,feature_group,source,token,weight
+release_year_z,numeric,week03 aggregates,,1.0
+avg_rating_z,numeric,week03 aggregates,,1.0
+rating_std,numeric,week03 aggregates,,1.0
+rating_count_log,numeric,week03 aggregates,,1.0
+unique_tag_count_log,numeric,week03 aggregates,,1.0
+genre_count_log,numeric,week03 aggregates,,1.0
+genre_drama,genre_top20,movie_genres,Drama,1.0
+genre_comedy,genre_top20,movie_genres,Comedy,1.0
+genre_thriller,genre_top20,movie_genres,Thriller,1.0
+genre_romance,genre_top20,movie_genres,Romance,1.0
+genre_action,genre_top20,movie_genres,Action,1.0
+genre_horror,genre_top20,movie_genres,Horror,1.0
+genre_documentary,genre_top20,movie_genres,Documentary,1.0
+genre_crime,genre_top20,movie_genres,Crime,1.0
+genre_adventure,genre_top20,movie_genres,Adventure,1.0
+genre_sci_fi,genre_top20,movie_genres,Sci-Fi,1.0
+genre_children,genre_top20,movie_genres,Children,1.0
+genre_animation,genre_top20,movie_genres,Animation,1.0
+genre_mystery,genre_top20,movie_genres,Mystery,1.0
+genre_fantasy,genre_top20,movie_genres,Fantasy,1.0
+genre_war,genre_top20,movie_genres,War,1.0
+genre_western,genre_top20,movie_genres,Western,1.0
+genre_musical,genre_top20,movie_genres,Musical,1.0
+genre_film_noir,genre_top20,movie_genres,Film-Noir,1.0
+genre_imax,genre_top20,movie_genres,IMAX,1.0
+tag_000_bd_r,tag_top20,tag_tokens,bd-r,1.0
+tag_001_woman_director,tag_top20,tag_tokens,woman director,1.0
+tag_002_murder,tag_top20,tag_tokens,murder,1.0
+tag_003_independent_film,tag_top20,tag_tokens,independent film,1.0
+tag_004_comedy,tag_top20,tag_tokens,comedy,1.0
+tag_005_nudity_topless,tag_top20,tag_tokens,nudity (topless),1.0
+tag_006_based_on_a_book,tag_top20,tag_tokens,based on a book,1.0
+tag_007_clv,tag_top20,tag_tokens,clv,1.0
+tag_008_drama,tag_top20,tag_tokens,drama,1.0
+tag_009_romance,tag_top20,tag_tokens,romance,1.0
+tag_010_funny,tag_top20,tag_tokens,funny,1.0
+tag_011_violence,tag_top20,tag_tokens,violence,1.0
+tag_012_based_on_novel_or_book,tag_top20,tag_tokens,based on novel or book,1.0
+tag_013_revenge,tag_top20,tag_tokens,revenge,1.0
+tag_014_musical,tag_top20,tag_tokens,musical,1.0
+tag_015_criterion,tag_top20,tag_tokens,criterion,1.0
+tag_016_betamax,tag_top20,tag_tokens,betamax,1.0
+tag_017_love,tag_top20,tag_tokens,love,1.0
+tag_018_family,tag_top20,tag_tokens,family,1.0
+tag_019_action,tag_top20,tag_tokens,action,1.0
