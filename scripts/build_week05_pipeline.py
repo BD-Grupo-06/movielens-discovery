@@ -16,6 +16,11 @@ from sklearn.decomposition import PCA, TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+from typing import Optional
+import logging
 
 DEFAULT_RANDOM_STATE = 42
 
@@ -74,7 +79,7 @@ def build_rating_features(ratings_df: pl.DataFrame) -> pl.DataFrame:
 
     agg = ratings_df.group_by("movieId").agg(
         [
-            pl.count().alias("rating_count"),
+            pl.len().alias("rating_count"),
             pl.col("rating").mean().alias("rating_mean"),
             pl.col("rating").std().alias("rating_std"),
             pl.col("rating").min().alias("rating_min"),
@@ -112,7 +117,7 @@ def build_tag_text(tags_df: pl.DataFrame) -> pl.DataFrame:
         .agg(
             [
                 pl.col(tag_col).unique().alias("tag_list"),
-                pl.count().alias("tag_count"),
+                pl.len().alias("tag_count"),
             ]
         )
         .with_columns(pl.col("tag_list").list.join(" ").alias("tag_text"))
@@ -232,11 +237,14 @@ def reconstruction_error_pca(numeric_df: pd.DataFrame, random_state: int) -> flo
 
 def reconstruction_error_svd(tfidf_matrix: sparse.csr_matrix, random_state: int) -> float:
     n_components = min(200, tfidf_matrix.shape[1] - 1) if tfidf_matrix.shape[1] > 1 else 1
+    
     svd = TruncatedSVD(n_components=n_components, random_state=random_state)
-    transformed = svd.fit_transform(tfidf_matrix)
-    reconstructed = svd.inverse_transform(transformed)
-    diff = tfidf_matrix - sparse.csr_matrix(reconstructed)
-    return float((diff.multiply(diff)).sum() / tfidf_matrix.shape[0])
+    svd.fit(tfidf_matrix)
+
+    explained = svd.explained_variance_ratio_.sum()
+    error = 1.0 - explained
+
+    return float(error)
 
 
 def run_tsne(embedding: np.ndarray, random_state: int) -> np.ndarray:
@@ -253,51 +261,266 @@ def save_plot(fig, path: Path) -> None:
         pass
 
 
+def run_eda(input_dir: Path | str, output_dir: Path | str) -> None:
+    """
+    Performs Expanded Exploratory Data Analysis on the Silver/processed layer data.
+    Saves several PNG visualizations to the output directory.
+    """
+    input_dir = Path(input_dir)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    logger = logging.getLogger(__name__)
+    logger.info("Starting Expanded Exploratory Data Analysis")
+
+    # Locate movies file (check common parquet/csv locations)
+    candidates_movies = [
+        input_dir / "movies_catalog.parquet",
+        input_dir / "movies.parquet",
+        input_dir / "movies.csv",
+        Path("data/raw/ml-25m/movies.csv"),
+    ]
+    movies = None
+    movies_path_used = None
+    for p in candidates_movies:
+        if p.exists():
+            movies_path_used = p
+            logger.info("Loading movies from %s", p)
+            if p.suffix == ".parquet":
+                movies = pl.read_parquet(p)
+            else:
+                movies = pl.read_csv(p)
+            break
+
+    if movies is None:
+        logger.warning("No movies file found in candidates; skipping EDA.")
+        return
+
+    # Locate movie stats (prefer processed numeric features), else derive from ratings
+    candidates_stats = [
+        input_dir / "movie_numeric_features.parquet",
+        Path("data/processed/week05/movie_numeric_features.parquet"),
+        Path("data/processed/week03_v1/movie_numeric_features.parquet"),
+    ]
+    movie_stats = None
+    stats_path_used = None
+    for p in candidates_stats:
+        if p.exists():
+            stats_path_used = p
+            logger.info("Loading movie numeric stats from %s", p)
+            movie_stats = pl.read_parquet(p)
+            break
+
+    if movie_stats is None:
+        # try to find ratings to aggregate
+        candidates_ratings = [
+            input_dir / "ratings_clean.parquet",
+            Path("data/processed/week03_v1/ratings_clean.parquet"),
+            Path("data/raw/ml-25m/ratings.csv"),
+        ]
+        ratings = None
+        ratings_path_used = None
+        for p in candidates_ratings:
+            if p.exists():
+                ratings_path_used = p
+                logger.info("Loading ratings from %s to derive stats", p)
+                if p.suffix == ".parquet":
+                    ratings = pl.read_parquet(p)
+                else:
+                    ratings = pl.read_csv(p)
+                break
+
+        if ratings is not None:
+            movie_stats = (
+                ratings.group_by("movieId").agg([
+                    pl.len().alias("rating_count"),
+                    pl.col("rating").mean().alias("mean_rating"),
+                    pl.col("rating").var().alias("rating_variance"),
+                ])
+            )
+            logger.info("Derived movie stats from ratings (rows=%d)", movie_stats.height)
+        else:
+            logger.warning("No movie numeric stats or ratings found; proceeding with limited EDA (movies only)")
+            movie_stats = pl.DataFrame({"movieId": []})
+
+    logger.debug("Merging data for EDA...")
+    # Convert to Pandas for visualization
+    # Ensure consistent column names
+    stats = movie_stats
+    # normalise column names used below
+    if "rating_count" in stats.columns and "mean_rating" not in stats.columns:
+        if "rating_mean" in stats.columns:
+            stats = stats.rename({"rating_mean": "mean_rating"})
+
+    stats = movie_stats
+    # normalize rating column names
+    if "rating_mean" in stats.columns and "mean_rating" not in stats.columns:
+        stats = stats.rename({"rating_mean": "mean_rating"})
+
+    # join (left join so movies without stats are kept)
+    df = movies.join(stats, on="movieId", how="left").to_pandas()
+
+    # 2. Genre Volume Analysis
+    logger.info("Analyzing Genre Volume...")
+    if "genres" in movies.columns:
+        genre_counts = (
+            movies.select(pl.col("genres").str.split("|").alias("genres"))
+            .explode("genres")
+            .with_columns(pl.col("genres").alias("genre"))
+            .group_by("genres")
+            .count()
+            .sort("count", descending=True)
+        ).to_pandas()
+
+        plt.figure(figsize=(12, 6))
+        sns.barplot(data=genre_counts, x="count", y="genres", palette="viridis")
+        plt.title("Number of Movies per Genre")
+        plt.xlabel("Movie Count")
+        plt.ylabel("Genre")
+        plt.tight_layout()
+        plt.savefig(output_dir / "genre_volume.png")
+        plt.close()
+    else:
+        logger.info("No genres column in movies dataset; skipping genre volume.")
+
+    # 3. Genre Quality Profiling: Mean Rating Distribution by Genre
+    logger.info("Profiling Genre Quality (Mean Ratings)...")
+    if "genres" in movies.columns and "mean_rating" in df.columns:
+        genre_quality = (
+            movies.join(stats, on="movieId", how="inner")
+            .select([pl.col("genres").str.split("|").alias("genres"), "mean_rating"]) 
+            .explode("genres")
+        ).to_pandas()
+
+        plt.figure(figsize=(12, 8))
+        order = genre_quality.groupby("genres")["mean_rating"].median().sort_values(ascending=False).index
+        sns.boxplot(data=genre_quality, x="mean_rating", y="genres", order=order, palette="coolwarm")
+        plt.title("Distribution of Mean Ratings by Genre (Ordered by Median)")
+        plt.xlabel("Mean Rating")
+        plt.ylabel("Genre")
+        plt.grid(True, axis="x", alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(output_dir / "genre_quality_profile.png")
+        plt.close()
+    else:
+        logger.info("Insufficient data for genre quality profiling; skipping.")
+
+    # 4. Popularity vs Quality Correlation
+    logger.info("Analyzing Popularity vs Quality...")
+    if "rating_count" in df.columns and "mean_rating" in df.columns:
+        plt.figure(figsize=(10, 6))
+        sns.scatterplot(data=df, x="rating_count", y="mean_rating", alpha=0.1, color="purple")
+        plt.xscale("log")
+        plt.title("Popularity (Count) vs Quality (Mean Rating)")
+        plt.xlabel("Rating Count (Log Scale)")
+        plt.ylabel("Mean Rating")
+        plt.tight_layout()
+        plt.savefig(output_dir / "popularity_vs_quality.png")
+        plt.close()
+    else:
+        logger.info("Insufficient columns for popularity vs quality plot; skipping.")
+
+    # 5. Long-Tail Plot
+    logger.info("Generating Long-Tail Plot...")
+    if "rating_count" in df.columns:
+        popularity = df["rating_count"].sort_values(ascending=False).values
+        plt.figure(figsize=(10, 6))
+        plt.plot(popularity, color="darkorange", linewidth=2)
+        plt.title("Long-Tail Distribution of Movie Popularity")
+        plt.xlabel("Movie Rank")
+        plt.ylabel("Number of Ratings")
+        plt.yscale("log")
+        plt.grid(True, which="both", ls="--", alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(output_dir / "long_tail.png")
+        plt.close()
+    else:
+        logger.info("No rating_count column for long-tail plot; skipping.")
+    logger.info("Expanded EDA plots saved to %s", output_dir)
+
+
 def run_pipeline(
     data_dir: Path,
     processed_dir: Path,
     artifacts_dir: Path,
     random_state: int = DEFAULT_RANDOM_STATE,
 ) -> None:
+    logger = logging.getLogger(__name__)
+    logger.info("Starting pipeline: data_dir=%s processed_dir=%s artifacts_dir=%s", data_dir, processed_dir, artifacts_dir)
+    import time
+
+    start_total = time.perf_counter()
+
+    logger.info("Ensuring directories...")
     ensure_dir(processed_dir)
     ensure_dir(artifacts_dir)
 
+    # Always run EDA before processing
+    try:
+        logger.info("Running pre-processing EDA...")
+        run_eda(input_dir=data_dir, output_dir=artifacts_dir)
+        logger.info("Completed pre-processing EDA")
+    except Exception as e:
+        logger.warning("Pre-processing EDA failed: %s", e)
+
+    t0 = time.perf_counter()
+    logger.info("Reading input parquet files...")
     movies_df = read_parquet(data_dir / "movies_catalog.parquet")
     movie_genres_df = read_parquet(data_dir / "movie_genres.parquet")
     ratings_df = read_parquet(data_dir / "ratings_clean.parquet")
     tags_df = read_parquet(data_dir / "tags_clean.parquet")
+    logger.info("Read input files in %.2fs", time.perf_counter() - t0)
 
+    t0 = time.perf_counter()
+    logger.info("Building feature matrices (genre, rating, text)...")
     numeric_df, tfidf_matrix, vocab = build_feature_matrices(
         movies_df, movie_genres_df, ratings_df, tags_df
     )
+    logger.info("Built feature matrices in %.2fs", time.perf_counter() - t0)
 
     numeric_path = processed_dir / "movie_numeric_features.parquet"
+    t0 = time.perf_counter()
+    logger.info("Writing numeric features to %s", numeric_path)
     pl.from_pandas(numeric_df).write_parquet(numeric_path)
+    logger.info("Wrote numeric features in %.2fs", time.perf_counter() - t0)
 
     tfidf_path = processed_dir / "movie_text_tfidf.npz"
+    t0 = time.perf_counter()
+    logger.info("Saving TF-IDF matrix to %s", tfidf_path)
     sparse.save_npz(str(tfidf_path), tfidf_matrix)
+    logger.info("Saved TF-IDF in %.2fs", time.perf_counter() - t0)
 
     vocab_path = processed_dir / "movie_text_tfidf_vocab.json"
     vocab_serializable = {key: int(value) for key, value in vocab.items()}
+    logger.info("Writing vocab to %s", vocab_path)
     vocab_path.write_text(json.dumps(vocab_serializable, indent=2, ensure_ascii=True))
 
+    t0 = time.perf_counter()
+    logger.info("Running PCA and SVD (this may take a while)...")
     pca_df, pca_variance = run_pca(numeric_df, random_state)
     svd_embeddings, svd_variance = run_svd(tfidf_matrix, random_state)
+    logger.info("Completed PCA/SVD in %.2fs", time.perf_counter() - t0)
 
+    logger.info("Writing PCA embeddings to parquet")
     pl.from_pandas(pca_df).write_parquet(
         processed_dir / "movie_pca_embeddings.parquet"
     )
 
     svd_columns = [f"svd_{idx + 1}" for idx in range(svd_embeddings.shape[1])]
+    logger.info("Writing SVD embeddings to parquet")
     pl.DataFrame(svd_embeddings, schema=svd_columns).write_parquet(
         processed_dir / "movie_svd_embeddings.parquet"
     )
 
+    logger.info("Writing variance CSVs to artifacts")
     pca_variance.to_csv(artifacts_dir / "pca_variance.csv", index=False)
     svd_variance.to_csv(artifacts_dir / "svd_variance.csv", index=False)
 
+    t0 = time.perf_counter()
+    logger.info("Computing reconstruction errors...")
     pca_error = reconstruction_error_pca(numeric_df, random_state)
     svd_error = reconstruction_error_svd(tfidf_matrix, random_state)
+    logger.info("Computed reconstruction errors in %.2fs", time.perf_counter() - t0)
 
     comparison_table = pd.DataFrame(
         [
@@ -316,8 +539,10 @@ def run_pipeline(
         ]
     )
 
+    logger.info("Writing comparison table to artifacts")
     comparison_table.to_csv(artifacts_dir / "comparison_table.csv", index=False)
 
+    logger.info("Running t-SNE on PCA embeddings")
     tsne_input = pca_df.drop(columns=["movieId"]).values
     tsne_coords = run_tsne(tsne_input, random_state)
     tsne_df = pd.DataFrame(tsne_coords, columns=["tsne_1", "tsne_2"])
@@ -332,6 +557,7 @@ def run_pipeline(
         title="PCA Cumulative Explained Variance (Numeric Features)",
     )
     save_plot(pca_fig, artifacts_dir / "pca_cumulative_variance.html")
+    logger.info("Saved PCA cumulative variance plots")
 
     svd_fig = px.line(
         svd_variance,
@@ -341,6 +567,7 @@ def run_pipeline(
         title="SVD Cumulative Explained Variance (Text TF-IDF)",
     )
     save_plot(svd_fig, artifacts_dir / "svd_cumulative_variance.html")
+    logger.info("Saved SVD cumulative variance plots")
 
     tsne_fig = px.scatter(
         tsne_df,
@@ -350,6 +577,7 @@ def run_pipeline(
         opacity=0.6,
     )
     save_plot(tsne_fig, artifacts_dir / "tsne_scatter.html")
+    logger.info("Saved t-SNE scatter plot")
 
     summary = {
         "numeric_features": {
@@ -375,6 +603,8 @@ def run_pipeline(
     }
 
     (artifacts_dir / "week05_summary.json").write_text(json.dumps(summary, indent=2))
+    logger.info("Wrote week05_summary.json and artifacts (pca/svd/comparison). Total time: %.2fs", time.perf_counter() - start_total)
+
 
 
 def parse_args() -> argparse.Namespace:
@@ -397,6 +627,12 @@ def parse_args() -> argparse.Namespace:
         help="Path to write Week 5 artifacts.",
     )
     parser.add_argument(
+        "--log-level",
+        default="INFO",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Logging level for pipeline output.",
+    )
+    parser.add_argument(
         "--random-state",
         type=int,
         default=DEFAULT_RANDOM_STATE,
@@ -407,11 +643,13 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    logging.basicConfig(level=getattr(logging, args.log_level.upper(), logging.INFO), format="%(asctime)s %(levelname)s %(name)s - %(message)s")
     run_pipeline(
         data_dir=Path(args.input_dir),
         processed_dir=Path(args.processed_dir),
         artifacts_dir=Path(args.artifacts_dir),
         random_state=args.random_state,
+        
     )
 
 

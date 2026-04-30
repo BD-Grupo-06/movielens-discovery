@@ -1,0 +1,22 @@
+{
+  "numeric_features": {
+    "rows": 59047,
+    "columns": 30
+  },
+  "text_features": {
+    "rows": 62423,
+    "columns": 5000
+  },
+  "pca": {
+    "components": 20,
+    "cumulative_variance": 0.9012211152256835
+  },
+  "svd": {
+    "components": 200,
+    "cumulative_variance": 0.35719055336999256
+  },
+  "reconstruction_error": {
+    "pca": 0.09877888477431665,
+    "svd": 0.6428094466300073
+  }
+}
