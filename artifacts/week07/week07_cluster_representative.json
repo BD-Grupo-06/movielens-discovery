@@ -1,0 +1,117 @@
+{
+  "0": {
+    "random": [
+      "Movie 950",
+      "Movie 153032",
+      "Movie 5689",
+      "Movie 133569",
+      "Movie 91243",
+      "Movie 58033",
+      "Movie 202159",
+      "Movie 127246",
+      "Movie 8262",
+      "Movie 184755"
+    ],
+    "closest_by_rating": [
+      "Movie 3184 (rating: 3.23)",
+      "Movie 153 (rating: 3.23)",
+      "Movie 3697 (rating: 3.23)",
+      "Movie 55492 (rating: 3.23)",
+      "Movie 44189 (rating: 3.23)",
+      "Movie 4707 (rating: 3.23)",
+      "Movie 80891 (rating: 3.23)",
+      "Movie 86572 (rating: 3.23)",
+      "Movie 134517 (rating: 3.23)",
+      "Movie 58975 (rating: 3.23)"
+    ]
+  },
+  "1": {
+    "random": [
+      "Movie 144846",
+      "Movie 180697",
+      "Movie 188249",
+      "Movie 198931",
+      "Movie 136568",
+      "Movie 87860",
+      "Movie 156857",
+      "Movie 200792",
+      "Movie 131900",
+      "Movie 165467"
+    ],
+    "closest_by_rating": [
+      "Movie 5449 (rating: 3.17)",
+      "Movie 6012 (rating: 3.17)",
+      "Movie 3642 (rating: 3.17)",
+      "Movie 6154 (rating: 3.17)",
+      "Movie 57942 (rating: 3.17)",
+      "Movie 117932 (rating: 3.17)",
+      "Movie 141692 (rating: 3.17)",
+      "Movie 144418 (rating: 3.17)",
+      "Movie 169198 (rating: 3.17)",
+      "Movie 174503 (rating: 3.17)",
+      "Movie 187085 (rating: 3.17)"
+    ]
+  },
+  "2": {
+    "random": [
+      "Movie 127078",
+      "Movie 132356",
+      "Movie 164765",
+      "Movie 175753",
+      "Movie 134684",
+      "Movie 153570",
+      "Movie 70643",
+      "Movie 86846",
+      "Movie 157995",
+      "Movie 4039"
+    ],
+    "closest_by_rating": [
+      "Movie 143387 (rating: 3.43)",
+      "Movie 184239 (rating: 3.43)",
+      "Movie 5396 (rating: 3.43)",
+      "Movie 4228 (rating: 3.43)",
+      "Movie 6907 (rating: 3.43)",
+      "Movie 4161 (rating: 3.43)",
+      "Movie 101025 (rating: 3.43)",
+      "Movie 1489 (rating: 3.43)",
+      "Movie 278 (rating: 3.43)",
+      "Movie 172421 (rating: 3.43)"
+    ]
+  },
+  "3": {
+    "random": [
+      "Movie 65188",
+      "Movie 163989",
+      "Movie 158663",
+      "Movie 152908",
+      "Movie 180023",
+      "Movie 208297",
+      "Movie 106156",
+      "Movie 165571",
+      "Movie 2494",
+      "Movie 140591"
+    ],
+    "closest_by_rating": [
+      "Movie 143249 (rating: 3.80)",
+      "Movie 188299 (rating: 3.79)",
+      "Movie 4208 (rating: 3.80)",
+      "Movie 2934 (rating: 3.79)",
+      "Movie 113632 (rating: 3.80)",
+      "Movie 1901 (rating: 3.79)",
+      "Movie 65001 (rating: 3.79)",
+      "Movie 68489 (rating: 3.79)",
+      "Movie 80582 (rating: 3.79)",
+      "Movie 96724 (rating: 3.79)",
+      "Movie 104033 (rating: 3.79)",
+      "Movie 104376 (rating: 3.79)",
+      "Movie 113938 (rating: 3.79)",
+      "Movie 138038 (rating: 3.79)",
+      "Movie 148974 (rating: 3.79)",
+      "Movie 149739 (rating: 3.79)",
+      "Movie 163314 (rating: 3.79)",
+      "Movie 171047 (rating: 3.79)",
+      "Movie 183875 (rating: 3.79)",
+      "Movie 194402 (rating: 3.79)"
+    ]
+  }
+}

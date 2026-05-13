@@ -1,0 +1,5 @@
+cluster,rating_mean_mean,rating_mean_median,rating_mean_std,rating_mean_min,rating_mean_max,rating_count_mean,rating_count_median,rating_count_std,rating_count_min,rating_count_max,rating_std_mean,rating_std_median,rating_std_std,rating_std_min,rating_std_max
+0,3.23,3.404,1.23,-0.651,6.107,940.822,15.0,3891.02,0.0,81482.0,0.803,0.908,0.468,0.0,3.182
+1,3.166,3.404,1.465,-0.651,6.107,165.351,3.0,1345.361,0.0,81491.0,0.685,0.764,0.573,0.0,3.182
+2,3.429,3.606,1.118,-0.651,6.107,548.545,9.0,2654.52,0.0,57309.0,0.887,0.979,0.505,0.0,3.182
+3,3.796,4.079,1.161,-0.651,6.107,66.236,4.0,766.942,0.0,48377.0,0.72,0.76,0.555,0.0,3.182
