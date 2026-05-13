@@ -1,0 +1,10 @@
+{
+  "input_path": "/content/week05_pca_feature_matrix.parquet",
+  "n_rows": 62423,
+  "n_features": 48,
+  "chosen_latent_dim": 13,
+  "chosen_ae_validation_mse": 0.034674114153214065,
+  "chosen_pca_validation_mse": 0.5083491525005887,
+  "chosen_ae_vs_pca_ratio": 0.06820924945512506,
+  "chosen_full_data_reconstruction_mse": 0.01887291782888832
+}
