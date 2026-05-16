@@ -1,6 +1,6 @@
 .DS_Store
 data/raw/ml-25m/*
-data/processed/week03_v1/*
+data/interim/*.parquet
 
 # Python virtual environments
 .venv/

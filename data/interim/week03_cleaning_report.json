@@ -1,0 +1,27 @@
+{
+  "row_changes": [
+    {
+      "table": "movies",
+      "raw": 62423,
+      "clean": 62423
+    },
+    {
+      "table": "ratings",
+      "raw": 25000095,
+      "clean": 25000095
+    },
+    {
+      "table": "tags",
+      "raw": 1093360,
+      "clean": 1092833
+    }
+  ],
+  "join_checks": {
+    "ratings_unmatched": 0,
+    "tags_unmatched": 0
+  },
+  "key_decisions": [
+    "Merged links into movies_catalog for direct imdbId/tmdbId access",
+    "Preserved null tmdbId values where missing in source"
+  ]
+}
