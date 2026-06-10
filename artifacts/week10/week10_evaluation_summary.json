@@ -1,0 +1,79 @@
+{
+  "evaluation_type": "item_to_item_genre_relevance",
+  "relevance_criterion": "shared_at_least_one_genre",
+  "k_values": [
+    5,
+    10,
+    20
+  ],
+  "n_query_movies": 4999,
+  "results": {
+    "popularity_global": {
+      "k_5": {
+        "precision": 0.582018,
+        "recall": 0.36215,
+        "ndcg": 0.843694,
+        "hit_rate": 0.955346
+      },
+      "k_10": {
+        "precision": 0.555447,
+        "recall": 0.608891,
+        "ndcg": 0.839018,
+        "hit_rate": 0.971966
+      },
+      "k_20": {
+        "precision": 0.459331,
+        "recall": 0.980777,
+        "ndcg": 0.820592,
+        "hit_rate": 0.980777
+      }
+    },
+    "content_cosine": {
+      "k_5": {
+        "precision": 0.982179,
+        "recall": 0.253453,
+        "ndcg": 0.993042,
+        "hit_rate": 0.998198
+      },
+      "k_10": {
+        "precision": 0.977493,
+        "recall": 0.503199,
+        "ndcg": 0.992487,
+        "hit_rate": 0.998999
+      },
+      "k_20": {
+        "precision": 0.972217,
+        "recall": 0.999399,
+        "ndcg": 0.991622,
+        "hit_rate": 0.999399
+      }
+    },
+    "svd_collaborative": {
+      "k_5": {
+        "precision": 0.880737,
+        "recall": 0.265648,
+        "ndcg": 0.952504,
+        "hit_rate": 0.988987
+      },
+      "k_10": {
+        "precision": 0.860332,
+        "recall": 0.515477,
+        "ndcg": 0.949578,
+        "hit_rate": 0.995795
+      },
+      "k_20": {
+        "precision": 0.837915,
+        "recall": 0.998598,
+        "ndcg": 0.946198,
+        "hit_rate": 0.998598
+      }
+    }
+  },
+  "artifacts": [
+    "week10_evaluation_results.csv",
+    "week10_error_analysis.csv",
+    "week10_evaluation_comparison.html",
+    "week10_ndcg10_comparison.html",
+    "week10_ndcg10_distribution.html"
+  ]
+}

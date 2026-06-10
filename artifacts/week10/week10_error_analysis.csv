@@ -1,0 +1,31 @@
+system,case_type,query_movieId,query_title,query_genres,precision_at_k,hit_rate_at_k
+popularity_global,strong,20,Money Train (1995),Action|Comedy|Crime|Drama|Thriller,1.0,1.0
+popularity_global,strong,42,Dead Presidents (1995),Action|Crime|Drama,1.0,1.0
+popularity_global,strong,78,"Crossing Guard, The (1995)",Action|Crime|Drama|Thriller,1.0,1.0
+popularity_global,strong,145,Bad Boys (1995),Action|Comedy|Crime|Drama|Thriller,1.0,1.0
+popularity_global,strong,198,Strange Days (1995),Action|Crime|Drama|Mystery|Sci-Fi|Thriller,1.0,1.0
+popularity_global,failure,99,Heidi Fleiss: Hollywood Madam (1995),Documentary,0.0,0.0
+popularity_global,failure,116,Anne Frank Remembered (1995),Documentary,0.0,0.0
+popularity_global,failure,162,Crumb (1994),Documentary,0.0,0.0
+popularity_global,failure,206,Unzipped (1995),Documentary,0.0,0.0
+popularity_global,failure,246,Hoop Dreams (1994),Documentary,0.0,0.0
+content_cosine,strong,1,Toy Story (1995),Adventure|Animation|Children|Comedy|Fantasy,1.0,1.0
+content_cosine,strong,2,Jumanji (1995),Adventure|Children|Fantasy,1.0,1.0
+content_cosine,strong,3,Grumpier Old Men (1995),Comedy|Romance,1.0,1.0
+content_cosine,strong,4,Waiting to Exhale (1995),Comedy|Drama|Romance,1.0,1.0
+content_cosine,strong,5,Father of the Bride Part II (1995),Comedy,1.0,1.0
+content_cosine,failure,71,Fair Game (1995),Action,0.0,0.0
+content_cosine,failure,1965,Repo Man (1984),Comedy|Sci-Fi,0.0,0.0
+content_cosine,failure,2118,"Dead Zone, The (1983)",Thriller,0.0,0.0
+content_cosine,failure,2763,"Thomas Crown Affair, The (1999)",Action|Mystery,0.0,0.0
+content_cosine,failure,3769,Thunderbolt and Lightfoot (1974),Action,0.0,0.0
+svd_collaborative,strong,4,Waiting to Exhale (1995),Comedy|Drama|Romance,1.0,1.0
+svd_collaborative,strong,8,Tom and Huck (1995),Adventure|Children,1.0,1.0
+svd_collaborative,strong,9,Sudden Death (1995),Action,1.0,1.0
+svd_collaborative,strong,10,GoldenEye (1995),Action|Adventure|Thriller,1.0,1.0
+svd_collaborative,strong,11,"American President, The (1995)",Comedy|Drama|Romance,1.0,1.0
+svd_collaborative,failure,193,Showgirls (1995),Drama,0.0,0.0
+svd_collaborative,failure,383,Wyatt Earp (1994),Western,0.0,0.0
+svd_collaborative,failure,416,Bad Girls (1994),Western,0.0,0.0
+svd_collaborative,failure,1111,Microcosmos (Microcosmos: Le peuple de l'herbe) (1996),Documentary,0.0,0.0
+svd_collaborative,failure,1797,Everest (1998),Documentary|IMAX,0.0,0.0

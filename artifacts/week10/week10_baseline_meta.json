@@ -1,0 +1,34 @@
+{
+  "catalog_size": 59047,
+  "rated_movies": 59047,
+  "global_mean_rating": 3.071374,
+  "prior_count_bayesian": 1.0,
+  "embedding_dim": 13,
+  "embedding_model": "autoencoder_latent_13",
+  "n_clusters": 7,
+  "top_n_recs": 20,
+  "n_query_movies_content": 5000,
+  "baselines": [
+    {
+      "name": "popularity_global",
+      "type": "popularity",
+      "signal": "bayesian_score"
+    },
+    {
+      "name": "popularity_cluster",
+      "type": "popularity",
+      "signal": "bayesian_score_within_cluster"
+    },
+    {
+      "name": "content_cosine",
+      "type": "content",
+      "signal": "cosine_similarity_ae13"
+    }
+  ],
+  "artifacts": [
+    "week10_popularity_global.csv",
+    "week10_popularity_cluster.csv",
+    "week10_content_recs_top20.parquet",
+    "week10_cluster_popularity_stats.csv"
+  ]
+}

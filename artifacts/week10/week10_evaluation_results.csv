@@ -1,0 +1,10 @@
+system,k,precision_at_k,recall_at_k,ndcg_at_k,hit_rate_at_k,n_queries
+popularity_global,5,0.582,0.3621,0.8437,0.9553,4994
+popularity_global,10,0.5554,0.6089,0.839,0.972,4994
+popularity_global,20,0.4593,0.9808,0.8206,0.9808,4994
+content_cosine,5,0.9822,0.2535,0.993,0.9982,4994
+content_cosine,10,0.9775,0.5032,0.9925,0.999,4994
+content_cosine,20,0.9722,0.9994,0.9916,0.9994,4994
+svd_collaborative,5,0.8807,0.2656,0.9525,0.989,4994
+svd_collaborative,10,0.8603,0.5155,0.9496,0.9958,4994
+svd_collaborative,20,0.8379,0.9986,0.9462,0.9986,4994

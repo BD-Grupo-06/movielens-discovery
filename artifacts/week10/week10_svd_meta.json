@@ -1,0 +1,21 @@
+{
+  "model": "TruncatedSVD_item_factors",
+  "library": "sklearn.decomposition.TruncatedSVD",
+  "min_movie_ratings": 50,
+  "min_user_ratings": 20,
+  "n_users_in_matrix": 162540,
+  "n_movies_in_matrix": 13176,
+  "matrix_density": 0.01150757,
+  "n_components_chosen": 50,
+  "explained_variance_chosen": 0.177907,
+  "rating_centering": "per_user_mean",
+  "similarity_metric": "cosine (L2-normalized item factors)",
+  "top_n": 20,
+  "n_query_movies": 5000,
+  "artifacts": [
+    "week10_svd_item_factors.parquet",
+    "week10_svd_recs_top20.parquet",
+    "week10_svd_sweep.csv",
+    "week10_svd_singular_values.csv"
+  ]
+}
