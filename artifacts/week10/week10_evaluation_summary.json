@@ -75,5 +75,76 @@
     "week10_evaluation_comparison.html",
     "week10_ndcg10_comparison.html",
     "week10_ndcg10_distribution.html"
-  ]
+  ],
+  "loo_evaluation": {
+    "evaluation_type": "leave_one_out_user_history",
+    "split_criterion": "last_item_by_timestamp",
+    "min_ratings_per_user": 5,
+    "sample_users": 10000,
+    "random_seed": 42,
+    "k_values": [
+      5,
+      10,
+      20
+    ],
+    "recall_note": "En LOO, Recall@K = Hit Rate@K porque hay exactamente 1 \u00edtem de test por usuario. El Recall@K de la evaluaci\u00f3n por g\u00e9nero (secciones 1\u201310) ten\u00eda denominador igual al pool candidato del sistema \u2014 no al universo real \u2014 lo que sobreestimaba la m\u00e9trica. Queda documentado en recall_at_k().",
+    "results": {
+      "popularity_global": {
+        "k_5": {
+          "hit_rate": 0.0287,
+          "precision": 0.00574,
+          "ndcg": 0.018044
+        },
+        "k_10": {
+          "hit_rate": 0.0465,
+          "precision": 0.00465,
+          "ndcg": 0.023755
+        },
+        "k_20": {
+          "hit_rate": 0.0767,
+          "precision": 0.003835,
+          "ndcg": 0.031293
+        }
+      },
+      "content_cosine": {
+        "k_5": {
+          "hit_rate": 0.021851,
+          "precision": 0.00437,
+          "ndcg": 0.013889
+        },
+        "k_10": {
+          "hit_rate": 0.036823,
+          "precision": 0.003682,
+          "ndcg": 0.018691
+        },
+        "k_20": {
+          "hit_rate": 0.056348,
+          "precision": 0.002817,
+          "ndcg": 0.023597
+        }
+      },
+      "svd_collaborative": {
+        "k_5": {
+          "hit_rate": 0.051492,
+          "precision": 0.010298,
+          "ndcg": 0.034258
+        },
+        "k_10": {
+          "hit_rate": 0.079514,
+          "precision": 0.007951,
+          "ndcg": 0.043163
+        },
+        "k_20": {
+          "hit_rate": 0.122104,
+          "precision": 0.006105,
+          "ndcg": 0.053829
+        }
+      }
+    },
+    "artifacts": [
+      "week10_loo_evaluation_results.csv",
+      "week10_loo_evaluation_comparison.html",
+      "week10_loo_evaluation_comparison.png"
+    ]
+  }
 }

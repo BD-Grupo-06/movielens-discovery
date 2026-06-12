@@ -68,7 +68,9 @@ Specific questions answered:
 | `week10_svd_recs_top20.parquet` | SVD collaborative top-20 per query movie | 0.5 MB |
 | `week10_evaluation_results.csv` | Full metric comparison table | 0.5 KB |
 | `week10_error_analysis.csv` | Strong and failure cases per system | 2.4 KB |
-| `week10_evaluation_summary.json` | JSON summary of all evaluation results | 1.7 KB |
+| `week10_evaluation_summary.json` | JSON summary of all evaluation results (includes LOO) | 2.5 KB |
+| `week10_loo_evaluation_results.csv` | Leave-One-Out metric comparison table | 0.5 KB |
+| `week10_loo_evaluation_comparison.png` | LOO bar chart (Hit Rate, Precision, NDCG @ K) | ~90 KB |
 
 ---
 
@@ -200,7 +202,9 @@ alignment for popular movie clusters.
 Genre overlap is a reproducible, catalog-level proxy that requires no user ground truth.
 It is conservative: two movies can share a genre without being close stylistically,
 and can be stylistically close without sharing a genre label.
-A user-history holdout evaluation would be stronger, but requires user-level recommenders.
+A user-history holdout evaluation is stronger; Section 8b adds a Leave-One-Out evaluation over user histories.
+
+> **Recall@K limitation:** In the genre-based protocol, the `Recall@K` denominator was the number of relevant items within the system's own candidate pool — not the full catalog. This inflated Recall artificially (e.g. `content_cosine` Recall@20 = 0.9994). The defect is documented in the `recall_at_k()` function. The LOO evaluation in Section 8b uses Hit Rate@K as the correct recall proxy.
 
 ### 7.3 Metrics
 
@@ -256,6 +260,36 @@ and the tightest spread, while `popularity_global` shows the widest variance: it
 depends entirely on whether the globally popular movies happen to match the query's genre.
 
 ![Per-query NDCG@10 distribution by system](../../artifacts/week10/week10_ndcg10_distribution.png)
+
+---
+
+## 8b. Leave-One-Out (LOO) Evaluation
+
+To complement the genre-based protocol, a second evaluation was run using user rating histories from `ratings_clean.parquet`.
+
+**Protocol:**
+- Users with ≥ 5 ratings; 10,000 sampled (seed=42).
+- Last item by timestamp hidden as test; remainder used as training history.
+- Each system recommends top-K items excluding already-seen movies.
+- Metric: **Hit Rate@K** (= Recall@K when there is exactly 1 test item per user) and **NDCG@K**.
+
+> **Note on Precision@K in LOO:** With a single test item per user, `Precision@K = Hit Rate@K / K` by definition — it carries no additional information and should not be interpreted as low performance.
+
+### LOO results
+
+| System | Hit Rate@5 | Hit Rate@10 | Hit Rate@20 | NDCG@10 |
+|--------|-----------|------------|------------|--------|
+| `popularity_global` | 0.0287 | 0.0465 | 0.0767 | 0.0238 |
+| `content_cosine` | 0.0219 | 0.0368 | 0.0563 | 0.0187 |
+| **`svd_collaborative`** | **0.0515** | **0.0795** | **0.1221** | **0.0432** |
+
+> Source: `artifacts/week10/week10_loo_evaluation_results.csv` (seed=42, 10,000 users).
+
+**Key finding:** SVD collaborative **reverses the ranking** seen in the genre-based evaluation — it achieves nearly double the Hit Rate@10 of Popularity and more than double that of Content cosine. This confirms that SVD captures genuine behavioral predictive signal, while content-based similarity is stronger for catalog discovery but weaker at predicting individual user consumption.
+
+The contrast also validates the Recall correction: the genre-based Recall@20 for `content_cosine` was 0.9994 (inflated by the pool-denominator bug), while the real retrieval rate under LOO is 5.6%.
+
+![LOO evaluation comparison](../../artifacts/week10/week10_loo_evaluation_comparison.png)
 
 ---
 
@@ -353,14 +387,17 @@ All outputs are saved to `artifacts/week10/` (31 files, ~40 MB total).
 
 ## 13. Conclusion
 
-Week 10 is complete. Three recommendation systems were built, evaluated, and compared:
+Week 10 is complete. Three recommendation systems were built, evaluated, and compared under two complementary protocols:
 
-- **Popularity global** (NDCG@10 = 0.839) is the weakest baseline — genre-blind, high variance,
-  fails completely on niche genres. Useful only as a floor comparison.
-- **Content cosine** (NDCG@10 = **0.993**) is the strongest system, achieving near-perfect
-  genre-relevant retrieval by leveraging the dense autoencoder embedding space from Week 7.
-- **SVD collaborative** (NDCG@10 = 0.950) is the strongest behavioral model, capturing
-  co-occurrence patterns that content features miss — particularly valuable for genre-pure titles.
+**Genre-relevance evaluation** (item-to-item, 4,994 queries):
+- **Content cosine** (NDCG@10 = **0.993**) is the strongest system for catalog discovery, leveraging the dense autoencoder embedding space from Week 7.
+- **SVD collaborative** (NDCG@10 = 0.950) ranks second, capturing behavioral co-occurrence patterns absent from content features.
+- **Popularity global** (NDCG@10 = 0.839) is the weakest baseline — genre-blind and fails for niche genres.
+
+**Leave-One-Out evaluation** (user history, 10,000 users — Section 8b):
+- **SVD collaborative** (Hit Rate@10 = **7.9%**) wins clearly, nearly doubling Popularity (4.6%) and more than doubling Content cosine (3.7%).
+- This reversal reveals that SVD is the stronger *predictive* model for user behavior, while content similarity is better for catalog discovery.
+- A Recall@K defect in the genre protocol (pool-denominator inflation) was identified and documented.
 
 The recommendation layer is now a functioning component of the MovieLens Discovery pipeline.
 The cluster segmentation from Week 7 underpins the cluster-aware baseline and sets up
