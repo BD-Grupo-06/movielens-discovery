@@ -6,7 +6,7 @@
     10,
     20
   ],
-  "n_query_movies": 4999,
+  "n_query_movies": 4994,
   "results": {
     "popularity_global": {
       "k_5": {
@@ -69,6 +69,99 @@
       }
     }
   },
+  "genre_eval_corrected": {
+    "evaluation_type": "item_to_item_genre_relevance_corrected",
+    "n_query_movies": 4994,
+    "universe_size": 59047,
+    "mean_relevant_per_query": 22301,
+    "recall_note": "catalog_recall_at_k usa como denominador el numero de peliculas del universo (59,047) que comparten al menos un genero con la query (en promedio ~22,301), en lugar del pool propio del sistema. Por eso los valores son pequenos por construccion: con miles de items relevantes, Recall@20 <= 20/relevantes. Precision@K y NDCG@K son las metricas informativas en este protocolo; ndcg_at_k_corrected normaliza contra el DCG ideal de K items relevantes.",
+    "results": {
+      "popularity_global": {
+        "k_5": {
+          "precision": 0.582018,
+          "catalog_recall": 0.000136,
+          "ndcg_corrected": 0.620684,
+          "hit_rate": 0.955346
+        },
+        "k_10": {
+          "precision": 0.555447,
+          "catalog_recall": 0.000263,
+          "ndcg_corrected": 0.585209,
+          "hit_rate": 0.971966
+        },
+        "k_20": {
+          "precision": 0.459511,
+          "catalog_recall": 0.000455,
+          "ndcg_corrected": 0.50619,
+          "hit_rate": 0.980777
+        }
+      },
+      "cluster_popularity": {
+        "k_5": {
+          "precision": 0.547897,
+          "catalog_recall": 0.000151,
+          "ndcg_corrected": 0.573139,
+          "hit_rate": 0.810372
+        },
+        "k_10": {
+          "precision": 0.544854,
+          "catalog_recall": 0.000297,
+          "ndcg_corrected": 0.558998,
+          "hit_rate": 0.821386
+        },
+        "k_20": {
+          "precision": 0.578444,
+          "catalog_recall": 0.000634,
+          "ndcg_corrected": 0.576176,
+          "hit_rate": 0.986384
+        }
+      },
+      "content_cosine": {
+        "k_5": {
+          "precision": 0.982179,
+          "catalog_recall": 0.000296,
+          "ndcg_corrected": 0.983448,
+          "hit_rate": 0.998198
+        },
+        "k_10": {
+          "precision": 0.977493,
+          "catalog_recall": 0.000588,
+          "ndcg_corrected": 0.979742,
+          "hit_rate": 0.998999
+        },
+        "k_20": {
+          "precision": 0.972217,
+          "catalog_recall": 0.001168,
+          "ndcg_corrected": 0.975253,
+          "hit_rate": 0.999399
+        }
+      },
+      "svd_collaborative": {
+        "k_5": {
+          "precision": 0.880737,
+          "catalog_recall": 0.000251,
+          "ndcg_corrected": 0.888186,
+          "hit_rate": 0.988987
+        },
+        "k_10": {
+          "precision": 0.860332,
+          "catalog_recall": 0.000485,
+          "ndcg_corrected": 0.871499,
+          "hit_rate": 0.995795
+        },
+        "k_20": {
+          "precision": 0.837915,
+          "catalog_recall": 0.000934,
+          "ndcg_corrected": 0.851852,
+          "hit_rate": 0.998598
+        }
+      }
+    },
+    "artifacts": [
+      "week10_genre_eval_corrected.csv",
+      "week10_data_alignment.csv"
+    ]
+  },
   "artifacts": [
     "week10_evaluation_results.csv",
     "week10_error_analysis.csv",
@@ -87,7 +180,7 @@
       10,
       20
     ],
-    "recall_note": "En LOO, Recall@K = Hit Rate@K porque hay exactamente 1 \u00edtem de test por usuario. El Recall@K de la evaluaci\u00f3n por g\u00e9nero (secciones 1\u201310) ten\u00eda denominador igual al pool candidato del sistema \u2014 no al universo real \u2014 lo que sobreestimaba la m\u00e9trica. Queda documentado en recall_at_k().",
+    "recall_note": "En LOO, Recall@K = Hit Rate@K porque hay exactamente 1 ítem de test por usuario. El Recall@K de la evaluación por género (secciones 1–10) tenía denominador igual al pool candidato del sistema — no al universo real — lo que sobreestimaba la métrica. Queda documentado en recall_at_k().",
     "results": {
       "popularity_global": {
         "k_5": {

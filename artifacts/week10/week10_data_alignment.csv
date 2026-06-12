@@ -1,0 +1,9 @@
+layer,join_key,n_movies,coverage_of_catalog_pct
+movies_catalog (week 3),movieId,62423,100.0
+autoencoder embeddings AE-13 (week 7),movieId,62423,100.0
+k-means assignments k=7 (week 7),movieId,62423,100.0
+rated movies with genres = evaluation universe (week 10),movieId,59047,94.59
+cluster popularity ranking (week 10 hybrid),movieId,59047,94.59
+SVD item factors (week 10),movieId,13176,21.11
+query set content/svd (week 10),movieId,5000,8.01
+"evaluated queries (intersection, with genres)",movieId,4994,8.0
