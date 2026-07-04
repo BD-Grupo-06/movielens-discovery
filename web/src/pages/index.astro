@@ -1,0 +1,10 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import GraphViewer from "@/components/GraphViewer.tsx";
+---
+
+<Layout title="Movie Graph" description="Grafo interactivo de similitud de películas (Week 12)">
+	<main class="h-screen w-full">
+		<GraphViewer client:only="react" />
+	</main>
+</Layout>

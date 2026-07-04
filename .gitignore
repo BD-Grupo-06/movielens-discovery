@@ -21,3 +21,6 @@ conda-meta/
 *.env
 skills/*
 .github
+
+*node_modules/
+.claude/

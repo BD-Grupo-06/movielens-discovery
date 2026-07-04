@@ -1,0 +1,38 @@
+{
+  "node_definition": "movie with >=50 ratings (has a Week10 SVD item factor)",
+  "edge_definition": "undirected, weighted by cosine similarity of Week10 SVD item factors (50-d), symmetrized top-k neighbors above a minimum similarity",
+  "directed": false,
+  "weighted": true,
+  "similarity_metric": "cosine",
+  "chosen_k": 15,
+  "chosen_min_similarity": 0.5,
+  "n_nodes": 13176,
+  "n_edges": 155331,
+  "sparsity": 0.001789591563754005,
+  "n_isolated": 29,
+  "n_components": 33,
+  "giant_component_size": 13139,
+  "giant_component_frac": 0.9971918639951427,
+  "betweenness_sample_size": 500,
+  "spearman_popularity_vs_graph_pagerank": 0.312529300214306,
+  "spearman_model_recindegree_vs_graph_pagerank": 0.5778427829359201,
+  "spearman_popularity_vs_model_recindegree": 0.7853079472133876,
+  "sensitivity_sweep_k_values": [
+    5,
+    10,
+    15,
+    20
+  ],
+  "sensitivity_sweep_thresholds": [
+    0.3,
+    0.5,
+    0.7
+  ],
+  "artifacts": [
+    "week12_graph_metrics.parquet",
+    "week12_sensitivity_sweep.csv",
+    "week12_sensitivity_sweep.html",
+    "week12_popularity_vs_pagerank.html",
+    "movie_graph_viz.json"
+  ]
+}
