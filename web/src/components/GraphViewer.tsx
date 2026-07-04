@@ -530,7 +530,7 @@ export default function GraphViewer() {
         <div className="w-full max-w-screen-xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between py-3">
           <div className="justify-center hidden md:flex md:justify-start mb-4 ml-6 md:mb-0">
             <span className="text-sm text-white/90">
-              © {new Date().getFullYear()} Grupo 06
+              © {new Date().getFullYear()} Group 06
             </span>
           </div>
           <ul className="flex flex-wrap justify-center md:justify-end mr-6 items-center text-sm font-medium text-white/90 space-x-4 md:space-x-6 gap-20 md:gap-0">
@@ -552,7 +552,7 @@ export default function GraphViewer() {
                 >
                   <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
                 </svg>
-                <span className="ml-1">Repositorio</span>
+                <span className="ml-1">Repository</span>
               </a>
             </li>
           </ul>
