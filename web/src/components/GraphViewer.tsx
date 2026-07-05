@@ -38,11 +38,12 @@ interface GraphPayload {
   edges: MovieEdge[];
 }
 
-// Neon-leaning but not fully saturated — reads as vivid without turning into
-// pure #ff00ff-style neon.
+// Vivid but not pure-neon — a dark theme can take saturated color fine now
+// that the bloom threshold (below) is tuned so only the brighter hover/
+// selected/connected emissive state actually blooms; base nodes stay crisp.
 const CLUSTER_COLORS = [
-  "#7dd3fc", "#a78bfa", "#f472b6", "#34d399",
-  "#fbbf24", "#fb7185", "#60a5fa", "#c084fc",
+  "#38bdf8", "#f43f5e", "#10b981", "#8b5cf6",
+  "#f59e0b", "#06b6d4", "#f97316", "#6366f1",
 ];
 
 // Fixed radius for the node shell. Positions are pinned (fx/fy/fz) via a
@@ -74,8 +75,8 @@ function linkEndId(end: string | MovieNode): string {
 
 // scene.background rather than a transparent canvas + CSS gradient behind it
 // (the bloom composer flattens page-level CSS to opaque black). Flat black —
-// the star field lives as real 3D points (see createStarfield) so it can
-// drift/parallax instead of being baked into a static texture.
+// the star field is a page-level 2D overlay (see StarField.astro) that
+// renders in front of this opaque canvas instead of behind it.
 function createBackdropTexture(): THREE.CanvasTexture {
   const size = 1024;
   const canvas = document.createElement("canvas");
@@ -85,40 +86,6 @@ function createBackdropTexture(): THREE.CanvasTexture {
   ctx.fillStyle = "#000000";
   ctx.fillRect(0, 0, size, size);
   return new THREE.CanvasTexture(canvas);
-}
-
-// Sparse white points on a large shell around the sphere. Real 3D objects
-// (not a painted texture) so slow rotation reads as gentle drift/parallax
-// rather than a static "dead" backdrop, and the existing bloom pass gives
-// them their soft neon flicker.
-function createStarfield(): THREE.Points {
-  const starCount = 1400;
-  const positions = new Float32Array(starCount * 3);
-  // Pushed well past the camera's max orbit distance so self-rotation and
-  // camera parallax both read as a slow drift instead of a fast sweep.
-  const minRadius = SPHERE_RADIUS * 6;
-  const maxRadius = SPHERE_RADIUS * 14;
-  for (let i = 0; i < starCount; i++) {
-    const r = minRadius + Math.random() * (maxRadius - minRadius);
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-    positions[i * 3 + 1] = r * Math.cos(phi);
-    positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  const material = new THREE.PointsMaterial({
-    color: 0xffffff,
-    size: 1.2,
-    // Fixed screen-space size (not shrunk by distance) — at this shell
-    // radius, size-attenuated points render as barely-visible specks.
-    sizeAttenuation: false,
-    transparent: true,
-    opacity: 0.85,
-    depthWrite: false,
-  });
-  return new THREE.Points(geometry, material);
 }
 
 // One shared unit-sphere geometry, scaled per node. A "base" (no glow) and a
@@ -181,17 +148,24 @@ function getPlanetTexture(color: string): THREE.CanvasTexture {
   return tex;
 }
 
-// glow=false: flat, unlit-looking base state (default). glow=true: bright
-// cluster-colored emissive, only applied to the hovered/selected node.
-function getNodeMaterial(clusterId: number | null, glow: boolean): THREE.MeshPhongMaterial {
+type NodeState = "base" | "connected" | "active";
+
+// base: flat, unlit-looking cluster tint (default), with the procedural
+// banded "planet" texture for visual interest. connected/active: same
+// cluster color, glowing — the banded texture is dropped here because its
+// white/black-tinted bands visibly desaturate the sphere's average color
+// vs. the link lines' flat, undiluted color, which was reading as a
+// node/edge color mismatch even though both use the exact same hex.
+function getNodeMaterial(clusterId: number | null, state: NodeState): THREE.MeshPhongMaterial {
   const color = clusterColor(clusterId);
-  const key = `${color}|${glow}`;
+  const key = `${color}|${state}`;
   let mat = nodeMaterialCache.get(key);
   if (!mat) {
     mat = new THREE.MeshPhongMaterial({
-      map: getPlanetTexture(color),
+      map: state === "base" ? getPlanetTexture(color) : null,
+      color: state === "base" ? 0xffffff : new THREE.Color(color),
       emissive: new THREE.Color(color),
-      emissiveIntensity: glow ? 1.1 : 0.04,
+      emissiveIntensity: state === "active" ? 1.3 : state === "connected" ? 0.6 : 0.04,
       shininess: 90,
       specular: new THREE.Color(0x999999),
     });
@@ -216,8 +190,8 @@ function getLinkMaterial(clusterId: number | null, isMesh: boolean) {
 }
 
 function buildNodeObject(node: MovieNode): THREE.Object3D {
-  const radius = 3 + Math.sqrt(node.degree) * 0.9;
-  const mesh = new THREE.Mesh(sharedSphereGeometry, getNodeMaterial(node.clusterId, false));
+  const radius = 2.2 + Math.sqrt(node.degree) * 0.65;
+  const mesh = new THREE.Mesh(sharedSphereGeometry, getNodeMaterial(node.clusterId, "active"));
   mesh.scale.setScalar(radius);
   return mesh;
 }
@@ -256,13 +230,25 @@ export default function GraphViewer() {
       const node = nodeByIdRef.current.get(id);
       if (!node?.__threeObj) return;
       const active = id === hoverIdRef.current || id === selectedIdRef.current;
-      (node.__threeObj as THREE.Mesh).material = getNodeMaterial(node.clusterId, active);
+      (node.__threeObj as THREE.Mesh).material = getNodeMaterial(node.clusterId, active ? "active" : "base");
       for (const link of linksByNodeRef.current.get(id) ?? []) {
         const lineObj = link.__lineObj;
         if (!lineObj) continue;
         lineObj.visible = active;
         if (active) {
           lineObj.material = getLinkMaterial(node.clusterId, (lineObj as any).isMesh === true);
+        }
+
+        // Also highlight the neighbor at the other end of this link, so
+        // hovering/selecting a node lights up its whole 1-hop ego network,
+        // not just the node and edges.
+        const neighborId = linkEndId(link.source) === id ? linkEndId(link.target) : linkEndId(link.source);
+        const neighborNode = nodeByIdRef.current.get(neighborId);
+        if (neighborNode?.__threeObj) {
+          (neighborNode.__threeObj as THREE.Mesh).material = getNodeMaterial(
+            neighborNode.clusterId,
+            active ? "connected" : "base",
+          );
         }
       }
     };
@@ -332,28 +318,17 @@ export default function GraphViewer() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     graph.scene().background = createBackdropTexture();
 
-    // Default far plane (2000) is closer than the far side of the star
-    // shell (up to ~camera distance + 14 * SPHERE_RADIUS); extend it so
-    // stars behind the sphere aren't clipped.
-    const camera = graph.camera() as THREE.PerspectiveCamera;
-    camera.far = 20000;
-    camera.updateProjectionMatrix();
-
-    const starfield = createStarfield();
-    graph.scene().add(starfield);
-    let starRafId = requestAnimationFrame(function animateStars() {
-      starfield.rotation.y += 0.00002;
-      starfield.rotation.x += 0.000006;
-      starRafId = requestAnimationFrame(animateStars);
-    });
-
     // Quarter-resolution bloom render targets: much cheaper per frame, and
-    // still visually smooth at this blur radius.
+    // still visually smooth at this blur radius. Threshold raised and
+    // strength lowered vs. the original tuning — the muted cluster palette
+    // has lower luminance than the old white/pastel one, but base nodes
+    // still shouldn't bloom at all; only the brighter accent (hover/
+    // selected/connected) emissive should clear the threshold and glow.
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(window.innerWidth / 3, window.innerHeight / 3),
-      0.32,
+      0.22,
       0.3,
-      0.82,
+      0.92,
     );
     graph.postProcessingComposer().addPass(bloomPass);
 
@@ -363,8 +338,19 @@ export default function GraphViewer() {
         if (disposed) return;
         setMeta(data.meta);
         const total = data.nodes.length;
-        const nodes = data.nodes.map((node, i) => {
-          const { x, y, z } = fibonacciSpherePoint(i, total, SPHERE_RADIUS);
+        // Group by cluster before assigning Fibonacci-sphere positions:
+        // consecutive indices along the golden-angle spiral land close
+        // together, so nodes from the same cluster land in the same
+        // region of the sphere instead of being speckled uniformly across
+        // it (JSON order has no relationship to cluster membership).
+        const sortedByCluster = [...data.nodes].sort(
+          (a, b) => (a.clusterId ?? -1) - (b.clusterId ?? -1),
+        );
+        const positionById = new Map(
+          sortedByCluster.map((node, i) => [node.id, fibonacciSpherePoint(i, total, SPHERE_RADIUS)]),
+        );
+        const nodes = data.nodes.map((node) => {
+          const { x, y, z } = positionById.get(node.id)!;
           return { ...node, x, y, z, fx: x, fy: y, fz: z };
         });
         const links = data.edges.map((e) => ({ ...e }));
@@ -408,9 +394,6 @@ export default function GraphViewer() {
     return () => {
       disposed = true;
       window.removeEventListener("resize", onResize);
-      cancelAnimationFrame(starRafId);
-      starfield.geometry.dispose();
-      (starfield.material as THREE.Material).dispose();
       graph._destructor();
       if (containerRef.current) containerRef.current.innerHTML = "";
     };
@@ -432,20 +415,14 @@ export default function GraphViewer() {
       />
 
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 z-10 flex items-center justify-center">
           <div className="h-10 w-10 rounded-full border-2 border-white/15 border-t-white/70 animate-spin" />
         </div>
       )}
 
-      <div className="pointer-events-none absolute top-8 left-1/2 -translate-x-1/2 text-center">
-        <div className="text-2xl md:text-3xl pt-2 font-semibold tracking-wide text-white/90">
-          MovieLens Discovery System
-        </div>
-      </div>
-
-      <div className="pointer-events-none absolute left-16 top-1/2 -translate-y-1/2 flex flex-col gap-3">
+      <div className="pointer-events-none absolute left-16 top-1/2 -translate-y-1/2 z-10 flex flex-col gap-3">
         {meta && (
-          <div className="w-60 rounded-lg border border-white/10 bg-black/50 backdrop-blur-sm p-3 text-white">
+          <div className="w-60 rounded-2xl bg-black/30 backdrop-blur-xl p-3 text-white">
             <div className="text-[11px] uppercase tracking-wide text-white/50 mb-2">Overview</div>
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-md bg-white/5 p-2">
@@ -463,7 +440,7 @@ export default function GraphViewer() {
           </div>
         )}
 
-        <div className="w-60 rounded-lg border border-white/10 bg-black/50 backdrop-blur-sm p-3 text-white">
+        <div className="w-60 rounded-2xl bg-black/30 backdrop-blur-xl p-3 text-white">
           <div className="text-[11px] uppercase tracking-wide text-white/50 mb-2">Clusters</div>
           <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
             {CLUSTER_COLORS.map((color, i) => (
@@ -478,7 +455,7 @@ export default function GraphViewer() {
 
       {panelNode && (
         <div
-          className="pointer-events-none fixed z-20 w-72 rounded-xl border border-white/10 bg-black/70 backdrop-blur-md p-4 text-white shadow-xl"
+          className="pointer-events-none fixed z-20 w-72 rounded-2xl bg-black/30 backdrop-blur-xl p-4 text-white shadow-xl"
           style={panelStyle}
         >
           <div className="flex gap-3">
@@ -526,7 +503,7 @@ export default function GraphViewer() {
         </div>
       )}
 
-      <footer className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 opacity-80 my-2 min-[375px]:pl-4 md:pl-0 mt-8 w-[90%] mx-auto container lg:max-w-4xl md:max-w-2xl mb-10 flex justify-center rounded-full bg-black/20 backdrop-blur-md">
+      <footer className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 my-2 min-[375px]:pl-4 md:pl-0 mt-8 w-[90%] mx-auto container lg:max-w-4xl md:max-w-2xl mb-10 flex justify-center rounded-full bg-black/30 backdrop-blur-xl">
         <div className="w-full max-w-screen-xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between py-3">
           <div className="justify-center hidden md:flex md:justify-start mb-4 ml-6 md:mb-0">
             <span className="text-sm text-white/90">

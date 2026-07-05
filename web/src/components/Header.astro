@@ -1,0 +1,35 @@
+---
+const navItems = [
+  { title: "Home", href: "/" },
+  { title: "Recommender", href: "/recommender" },
+];
+
+const currentPath = Astro.url.pathname.replace(/\/$/, "") || "/";
+---
+
+<header class="fixed top-4 inset-x-0 z-30 flex justify-center pointer-events-none">
+  <nav
+    class="pointer-events-auto flex items-center gap-1 px-2 py-1.5 rounded-full text-sm font-medium
+    bg-black/30 backdrop-blur-xl shadow-xl shadow-black/40"
+  >
+    <span class="px-3 font-semibold tracking-wide text-white/90 hidden sm:inline">
+      MovieLens Discovery
+    </span>
+    <span class="w-px h-4 bg-white/10 mx-1 hidden sm:inline-block" />
+    {
+      navItems.map(({ title, href }) => {
+        const isActive = href === "/" ? currentPath === "/" : currentPath.startsWith(href);
+        return (
+          <a
+            href={href}
+            class={`px-3 py-1.5 rounded-full transition ${
+              isActive ? "bg-white/10 text-white" : "text-white/60 hover:text-white"
+            }`}
+          >
+            {title}
+          </a>
+        );
+      })
+    }
+  </nav>
+</header>

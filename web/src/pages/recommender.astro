@@ -1,0 +1,13 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import RecommenderView from "@/components/RecommenderView.tsx";
+---
+
+<Layout
+	title="Recommender"
+	description="Movie recommender: content-based similarity and collaborative filtering (Week 10)"
+>
+	<main class="relative z-10 min-h-screen w-full overflow-y-auto pt-28 pb-16 px-4 md:px-10">
+		<RecommenderView client:only="react" />
+	</main>
+</Layout>

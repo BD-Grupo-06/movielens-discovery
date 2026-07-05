@@ -53,7 +53,7 @@ def load_cache(cache_path: Path) -> dict:
     return {}
 
 
-def fetch_poster_path(tmdb_id: int, api_key: str, session: requests.Session) -> str | None:
+def fetch_movie_details(tmdb_id: int, api_key: str, session: requests.Session) -> dict | None:
     resp = session.get(
         TMDB_MOVIE_URL.format(tmdb_id=tmdb_id),
         params={"api_key": api_key},
@@ -62,7 +62,8 @@ def fetch_poster_path(tmdb_id: int, api_key: str, session: requests.Session) -> 
     if resp.status_code == 404:
         return None
     resp.raise_for_status()
-    return resp.json().get("poster_path")
+    data = resp.json()
+    return {"poster_path": data.get("poster_path"), "overview": data.get("overview") or None}
 
 
 def fetch_posters(
@@ -71,41 +72,50 @@ def fetch_posters(
     api_key: str,
     poster_size: str,
     sleep_seconds: float,
+    nodes_key: str = "nodes",
 ) -> dict:
     payload = json.loads(graph_json_path.read_text())
-    nodes = payload["nodes"]
+    nodes = payload[nodes_key]
     cache = load_cache(cache_json_path)
 
     session = requests.Session()
     n_fetched, n_cached, n_missing, n_skipped = 0, 0, 0, 0
 
-    for node in nodes:
+    for i, node in enumerate(nodes):
         movie_id = str(node["movieId"])
         tmdb_id = node.get("tmdbId")
 
-        if movie_id in cache:
+        # "overview" was added after the first pass, so entries cached before that
+        # (poster_path/poster_url only) are re-fetched once to backfill it.
+        if movie_id in cache and "overview" in cache[movie_id]:
             n_cached += 1
             continue
         if tmdb_id is None:
-            cache[movie_id] = {"poster_path": None, "poster_url": None}
+            cache[movie_id] = {"poster_path": None, "poster_url": None, "overview": None}
             n_skipped += 1
             continue
 
         try:
-            poster_path = fetch_poster_path(tmdb_id, api_key, session)
+            details = fetch_movie_details(tmdb_id, api_key, session)
         except requests.RequestException as exc:
             print(f"  warning: failed to fetch tmdbId={tmdb_id} (movieId={movie_id}): {exc}")
-            poster_path = None
+            details = None
 
+        poster_path = details.get("poster_path") if details else None
+        overview = details.get("overview") if details else None
         poster_url = (
             TMDB_IMAGE_BASE.format(size=poster_size) + poster_path if poster_path else None
         )
-        cache[movie_id] = {"poster_path": poster_path, "poster_url": poster_url}
+        cache[movie_id] = {"poster_path": poster_path, "poster_url": poster_url, "overview": overview}
         if poster_path:
             n_fetched += 1
         else:
             n_missing += 1
         time.sleep(sleep_seconds)
+
+        if (i + 1) % 200 == 0:
+            cache_json_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_json_path.write_text(json.dumps(cache, indent=2))
 
     cache_json_path.parent.mkdir(parents=True, exist_ok=True)
     cache_json_path.write_text(json.dumps(cache, indent=2))
@@ -119,9 +129,10 @@ def fetch_posters(
     for node in nodes:
         entry = cache.get(str(node["movieId"]), {})
         node["posterUrl"] = entry.get("poster_url")
+        node["overview"] = entry.get("overview")
 
     graph_json_path.write_text(json.dumps(payload, indent=2))
-    print(f"Merged posterUrl into {graph_json_path}")
+    print(f"Merged posterUrl/overview into {graph_json_path}")
 
     return cache
 
@@ -136,6 +147,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--api-key", default=None, help="TMDb v3 API key (overrides env/file).")
     parser.add_argument("--poster-size", default="w342", help="TMDb poster size, e.g. w185/w342/w500.")
     parser.add_argument("--sleep", type=float, default=0.05, help="Delay between requests, in seconds.")
+    parser.add_argument("--nodes-key", default="nodes", help="Top-level JSON key holding the list of movie records.")
     return parser.parse_args()
 
 
@@ -149,6 +161,7 @@ def main() -> None:
         api_key=api_key,
         poster_size=args.poster_size,
         sleep_seconds=args.sleep,
+        nodes_key=args.nodes_key,
     )
 
 
