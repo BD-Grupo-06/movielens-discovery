@@ -22,6 +22,9 @@ Core architecture layers:
 4. Graph layer: item-item and/or user-item projections.
 5. Pipeline layer: reproducible path from raw data to processed artifacts.
 
+For the full rebuild path across every milestone (Weeks 3–12) and the `web/` demo, see
+[`RUNBOOK.md`](RUNBOOK.md). The quick start below only covers Week 3.
+
 ## Quick Start
 
 ### 1. Install requirements
@@ -104,7 +107,8 @@ This repository is organized to support the milestone flow:
 - Week 7: clustering experiments and validation.
 - Week 10: recommendation/ranking baseline and advanced approach with offline evaluation.
 - Week 12: graph construction and centrality analysis.
-- Week 14: integrated final report, reproducible runbook, and demo artifact.
+- Week 14: integrated final report ([`reports/week14/`](reports/week14/week14_milestone_final_integrated_delivery_v1.md)),
+  reproducible runbook ([`RUNBOOK.md`](RUNBOOK.md)), and demo artifact ([`web/`](web/)).
 
 ## Ethics and Access Note
 
