@@ -258,6 +258,7 @@ export default function GraphViewer() {
     // so the auto-rotate-while-idle effect actually works.
     const graph = new ForceGraph3D(containerRef.current, { controlType: "orbit" })
       .backgroundColor("#000000")
+      .showNavInfo(false)
       .nodeLabel(() => "")
       .nodeThreeObject((node: any) => buildNodeObject(node as MovieNode))
       .nodeThreeObjectExtend(false)
